@@ -139,20 +139,26 @@ def additional_metrics(model, dataloader):
     def log_prob(sample, posterior):
         nll = posterior.nll(sample, dims=1)
         return -nll
+    
+    metrics = {}
 
-    enc_out = []
-    for batch in tqdm(dataloader, desc="evaluation"):
-        x = batch[0]
-        out = model.encoder(x)
-        enc_out.append(out)
-    enc_out = torch.cat(enc_out, dim=0)
-    posterior = DiagonalGaussianDistribution(enc_out)
-    samples = posterior.sample()
-    log_probs = [log_prob(sample, posterior) for sample in samples]
-    log_probs = torch.stack(log_probs, dim=0)
-    M = log_probs.shape[0]
-    mi = torch.tensor([log_probs[i, i] - torch.sum(log_probs[i, :]) / M for i in range(M)]).mean()
-    return {"mi": mi.item()}
+    if model.encoder is not None:
+        # Mutual information
+        enc_out = []
+        for batch in tqdm(dataloader, desc="evaluation"):
+            x = batch[0]
+            out = model.encoder(x)
+            enc_out.append(out)
+        enc_out = torch.cat(enc_out, dim=0)
+        posterior = DiagonalGaussianDistribution(enc_out)
+        samples = posterior.sample()
+        log_probs = [log_prob(sample, posterior) for sample in samples]
+        log_probs = torch.stack(log_probs, dim=0)
+        M = log_probs.shape[0]
+        mi = torch.tensor([log_probs[i, i] - torch.sum(log_probs[i, :]) / M for i in range(M)]).mean()
+        metrics["mi"] = mi.item()
+    
+    return metrics
 
 
 def log_and_save_metrics(avg_metrics, dataset_split, step, filename):
