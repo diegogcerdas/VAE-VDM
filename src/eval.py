@@ -1,6 +1,7 @@
 import argparse
 import math
 from pathlib import Path
+from argparse import BooleanOptionalAction
 
 import torch
 import yaml
@@ -17,17 +18,20 @@ from utils import (
     has_int_squareroot,
     log,
     make_cifar,
+    make_mnist,
     print_model_summary,
     sample_batched,
 )
 from vdm import VDM
 from vdm_unet import UNetVDM
+from encoder import Encoder
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=12345)
+    parser.add_argument("--data-path", type=str, default='data')
     parser.add_argument("--results-path", type=str, required=True)
     parser.add_argument("--num-workers", type=int, default=1)
     parser.add_argument("--device", type=str, default="cuda")
@@ -41,11 +45,25 @@ def main():
     with open(Path(args.results_path) / "config.yaml", "r") as f:
         cfg = TrainConfig(**yaml.safe_load(f))
 
+    if cfg.use_mnist:
+        cfg.input_channels = 1
+        shape = (cfg.input_channels, 28, 28)
+    else:
+        cfg.input_channels = 3
+        shape = (cfg.input_channels, 32, 32)
+
     model = UNetVDM(cfg)
-    print_model_summary(model, batch_size=None, shape=(3, 32, 32))
-    train_set = make_cifar(train=True, download=True)
-    validation_set = make_cifar(train=False, download=False)
-    diffusion = VDM(model, cfg, image_shape=train_set[0][0].shape)
+    encoder = Encoder(shape, cfg) if cfg.use_encoder else None
+    print_model_summary(model, batch_size=None, shape=shape,  w_dim=cfg.w_dim, encoder=encoder)
+
+
+    if cfg.use_mnist:
+        train_set = make_mnist(train=True, download=True, root_path=args.data_path)
+        validation_set = make_mnist(train=False, download=False, root_path=args.data_path)
+    else:
+        train_set = make_cifar(train=True, download=True, root_path=args.data_path)
+        validation_set = make_cifar(train=False, download=False, root_path=args.data_path)
+    diffusion = VDM(model, cfg, image_shape=train_set[0][0].shape, encoder=encoder)
     Evaluator(
         diffusion,
         train_set,
@@ -109,7 +127,7 @@ class Evaluator:
         self.ema.ema_model.eval()
         self.path = results_path
         self.eval_path = self.path / f"eval_{get_date_str()}"
-        self.eval_path.mkdir()
+        self.eval_path.mkdir(exist_ok=True)
         self.checkpoint_file = self.path / f"model.pt"
         with open(self.eval_path / "eval_config.yaml", "w") as f:
             eval_conf = {
