@@ -9,4 +9,4 @@ ROOT=$DIR/..
 
 cd $ROOT/src
 
-accelerate launch --config_file accelerate_config.yaml train.py --data-path $ROOT/data --results-path $ROOT/results/$EXP_NAME/ --no-use-encoder --eval-every 500 --resume
+accelerate launch --config_file accelerate_config.yaml train.py --data-path $ROOT/data --results-path $ROOT/results/$EXP_NAME/ --no-use-encoder --batch-size 64 --eval-every 20 --resume --train-num-steps 100
