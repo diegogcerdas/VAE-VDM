@@ -57,7 +57,7 @@ def main():
     parser.add_argument("--attention-everywhere", action=BooleanOptionalAction, default=False)
 
     # Training
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--noise-schedule", type=str, default="fixed_linear")
     parser.add_argument("--gamma-min", type=float, default=-13.3)
     parser.add_argument("--gamma-max", type=float, default=5.0)
