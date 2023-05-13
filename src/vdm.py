@@ -149,11 +149,12 @@ class VDM(nn.Module):
         # *** Encoder loss (bpd): KL divergence from p(w)=N(0, 1) to q_phi(w | x)
         if self.cfg.use_encoder:
             encoder_loss = kl_std_normal(posterior.mean**2, posterior.var).sum(dim=-1) * bpd_factor
-        else:
-            encoder_loss = torch.zeros_like(recons_loss, requires_grad=False)
+            encoder_loss = encoder_loss * self.cfg.encoder_loss_weight
 
         # *** Overall loss in bpd. Shape (B, ).
-        loss = diffusion_loss + latent_loss + recons_loss + encoder_loss
+        loss = diffusion_loss + latent_loss + recons_loss
+        if self.cfg.use_encoder:
+            loss = loss + encoder_loss
 
         with torch.no_grad():
             gamma_0 = self.gamma(torch.tensor([0.0], device=self.device))
@@ -162,10 +163,11 @@ class VDM(nn.Module):
             "diff_loss": diffusion_loss.mean(),
             "latent_loss": latent_loss.mean(),
             "loss_recon": recons_loss.mean(),
-            "encoder_loss": encoder_loss.mean(),
             "gamma_0": gamma_0.item(),
             "gamma_1": gamma_1.item(),
         }
+        if self.cfg.use_encoder:
+            metrics["encoder_loss"] = encoder_loss.mean()
         return loss.mean(), metrics
 
     def log_probs_x_z0(self, x=None, z_0=None):

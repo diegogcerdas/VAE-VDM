@@ -65,7 +65,9 @@ def main():
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--clip-grad-norm", action=BooleanOptionalAction, default=True)
+    parser.add_argument("--encoder-loss-weight", type=float, default=1e4)
 
+    parser.add_argument("--train-num-steps", type=int, default=10_000_000)
     parser.add_argument("--eval-every", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=12345)
     parser.add_argument("--data-path", type=str, default='data')
@@ -108,6 +110,7 @@ def main():
             params, cfg.lr, betas=(0.9, 0.99), weight_decay=cfg.weight_decay, eps=1e-8
         ),
         config=cfg,
+        train_num_steps=args.train_num_steps,
         save_and_eval_every=args.eval_every,
         results_path=handle_results_path(args.results_path),
         resume=args.resume,

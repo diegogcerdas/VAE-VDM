@@ -46,6 +46,7 @@ class TrainConfig:
     lr: float
     weight_decay: float
     clip_grad_norm: bool
+    encoder_loss_weight: float
 
 
 def print_model_summary(model, *, batch_size, shape, w_dim, depth=4, batch_size_torchinfo=1, encoder=None):
