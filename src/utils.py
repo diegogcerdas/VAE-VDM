@@ -221,18 +221,18 @@ def maybe_unpack_batch(batch):
         return batch, None
 
 
-def make_cifar(*, train, download):
+def make_cifar(*, train, download, root_path):
     return CIFAR10(
-        root="data",
+        root=root_path,
         download=download,
         train=train,
         transform=transforms.Compose([transforms.ToTensor()]),
     )
 
 
-def make_mnist(*, train, download):
+def make_mnist(*, train, download, root_path):
     return MNIST(
-        root="data",
+        root=root_path,
         download=download,
         train=train,
         transform=transforms.Compose([transforms.ToTensor()]),

@@ -68,6 +68,7 @@ def main():
 
     parser.add_argument("--eval-every", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=12345)
+    parser.add_argument("--data-path", type=str, default='data')
     parser.add_argument("--results-path", type=str, default=None)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--num-workers", type=int, default=2)
@@ -91,12 +92,12 @@ def main():
 
     if args.use_mnist:
         with accelerator.local_main_process_first():
-            train_set = make_mnist(train=True, download=accelerator.is_local_main_process)
-        validation_set = make_mnist(train=False, download=False)
+            train_set = make_mnist(train=True, download=accelerator.is_local_main_process, root_path=args.data_path)
+        validation_set = make_mnist(train=False, download=False, root_path=args.data_path)
     else:
         with accelerator.local_main_process_first():
-            train_set = make_cifar(train=True, download=accelerator.is_local_main_process)
-        validation_set = make_cifar(train=False, download=False)
+            train_set = make_cifar(train=True, download=accelerator.is_local_main_process, root_path=args.data_path)
+        validation_set = make_cifar(train=False, download=False, root_path=args.data_path)
     diffusion = VDM(model, cfg, image_shape=train_set[0][0].shape, encoder=encoder)
     Trainer(
         diffusion,
