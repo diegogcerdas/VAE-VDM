@@ -25,28 +25,39 @@ from utils import (
     init_logger,
     log,
     make_cifar,
+    make_mnist,
     print_model_summary,
     sample_batched,
 )
 from vdm import VDM
-from vdm_unet import UNetVDM
+from vdm_unet import UNetVDMz, UNetVDM
+from encoder import Encoder
 
 
 def main():
     parser = argparse.ArgumentParser()
 
+    # Dataset
+    parser.add_argument("--use-mnist", action=BooleanOptionalAction, default=True)
+
     # Architecture
+    parser.add_argument("--use-encoder", action=BooleanOptionalAction, default=True)
+    parser.add_argument("--w-dim", type=int, default=128)
+    parser.add_argument("--block-out-channels", type=int, default=64)
+    parser.add_argument("--layers-per-block", type=int, default=2)
+    parser.add_argument("--norm-num-groups", type=int, default=32)
+
     parser.add_argument("--embedding-dim", type=int, default=128)
     parser.add_argument("--n-blocks", type=int, default=32)
     parser.add_argument("--n-attention-heads", type=int, default=1)
     parser.add_argument("--dropout-prob", type=float, default=0.1)
     parser.add_argument("--norm-groups", type=int, default=32)
     parser.add_argument("--input-channels", type=int, default=3)
-    parser.add_argument("--use-fourier-features", action=BooleanOptionalAction, default=True)
+    parser.add_argument("--use-fourier-features", action=BooleanOptionalAction, default=False)
     parser.add_argument("--attention-everywhere", action=BooleanOptionalAction, default=False)
 
     # Training
-    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--noise-schedule", type=str, default="fixed_linear")
     parser.add_argument("--gamma-min", type=float, default=-13.3)
     parser.add_argument("--gamma-max", type=float, default=5.0)
@@ -67,12 +78,30 @@ def main():
     init_logger(accelerator)
     cfg = init_config_from_args(TrainConfig, args)
 
-    model = UNetVDM(cfg)
-    print_model_summary(model, batch_size=cfg.batch_size, shape=(3, 32, 32))
-    with accelerator.local_main_process_first():
-        train_set = make_cifar(train=True, download=accelerator.is_local_main_process)
-    validation_set = make_cifar(train=False, download=False)
-    diffusion = VDM(model, cfg, image_shape=train_set[0][0].shape)
+    if cfg.use_mnist:
+        cfg.input_channels = 1
+        shape = (cfg.input_channels, 28, 28)
+    else:
+        cfg.input_channels = 3
+        shape = (cfg.input_channels, 32, 32)
+
+    if cfg.use_encoder:
+        model = UNetVDMz(cfg)
+        encoder = Encoder(shape, cfg)
+    else:
+        model = UNetVDM(cfg)
+        encoder = None
+    print_model_summary(model, batch_size=cfg.batch_size, shape=shape, w_dim=cfg.w_dim, encoder=encoder)
+
+    if args.use_mnist:
+        with accelerator.local_main_process_first():
+            train_set = make_mnist(train=True, download=accelerator.is_local_main_process)
+        validation_set = make_mnist(train=False, download=False)
+    else:
+        with accelerator.local_main_process_first():
+            train_set = make_cifar(train=True, download=accelerator.is_local_main_process)
+        validation_set = make_cifar(train=False, download=False)
+    diffusion = VDM(model, cfg, image_shape=train_set[0][0].shape, encoder=encoder)
     Trainer(
         diffusion,
         train_set,

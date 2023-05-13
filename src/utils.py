@@ -16,12 +16,20 @@ from accelerate import Accelerator
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, MNIST
 from tqdm.auto import tqdm
+
+from diffusers.models.vae import DiagonalGaussianDistribution
 
 
 @dataclass
 class TrainConfig:
+    use_mnist: bool
+    use_encoder: bool
+    w_dim: int
+    block_out_channels: int
+    layers_per_block: int
+    norm_num_groups: int
     embedding_dim: float
     n_blocks: int
     n_attention_heads: int
@@ -40,10 +48,14 @@ class TrainConfig:
     clip_grad_norm: bool
 
 
-def print_model_summary(model, *, batch_size, shape, depth=4, batch_size_torchinfo=1):
+def print_model_summary(model, *, batch_size, shape, w_dim, depth=4, batch_size_torchinfo=1, encoder=None):
+    if encoder is None:
+        input = [(batch_size_torchinfo, *shape), (batch_size_torchinfo,)]
+    else:
+        input = [(batch_size_torchinfo, *shape), (batch_size_torchinfo,), (batch_size_torchinfo, w_dim)]
     summary = torchinfo.summary(
         model,
-        [(batch_size_torchinfo, *shape), (batch_size_torchinfo,)],
+        input,
         depth=depth,
         col_names=["input_size", "output_size", "num_params"],
         verbose=0,  # quiet
@@ -60,6 +72,7 @@ def print_model_summary(model, *, batch_size, shape, depth=4, batch_size_torchin
         + "=" * len(str(summary).splitlines()[-1])
         + "\n"
     )
+    log("{:,}".format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
 
 def cycle(dl):
@@ -122,6 +135,26 @@ def evaluate_model(model, dataloader):
     return {k: sum(v) / len(v) for k, v in all_metrics.items()}  # average over dataset
 
 
+def additional_metrics(model, dataloader):
+    def log_prob(sample, posterior):
+        nll = posterior.nll(sample, dims=1)
+        return -nll
+
+    enc_out = []
+    for batch in tqdm(dataloader, desc="evaluation"):
+        x = batch[0]
+        out = model.encoder(x)
+        enc_out.append(out)
+    enc_out = torch.cat(enc_out, dim=0)
+    posterior = DiagonalGaussianDistribution(enc_out)
+    samples = posterior.sample()
+    log_probs = [log_prob(sample, posterior) for sample in samples]
+    log_probs = torch.stack(log_probs, dim=0)
+    M = log_probs.shape[0]
+    mi = torch.tensor([log_probs[i, i] - torch.sum(log_probs[i, :]) / M for i in range(M)]).mean()
+    return {"mi": mi.item()}
+
+
 def log_and_save_metrics(avg_metrics, dataset_split, step, filename):
     log(f"\n{dataset_split} metrics:")
     for k, v in avg_metrics.items():
@@ -168,6 +201,8 @@ def evaluate_model_and_log(model, dataloader, filename, split, step=None, n=1):
     if n > 1:
         log(f"\nRunning {n} evaluations to compute average metrics")
     metrics = dict_stats([evaluate_model(model, dataloader) for _ in range(n)])
+    add_metrics = additional_metrics(model, dataloader)
+    metrics.update(add_metrics)
     log_and_save_metrics(metrics, split, step, filename)
 
 
@@ -188,6 +223,15 @@ def maybe_unpack_batch(batch):
 
 def make_cifar(*, train, download):
     return CIFAR10(
+        root="data",
+        download=download,
+        train=train,
+        transform=transforms.Compose([transforms.ToTensor()]),
+    )
+
+
+def make_mnist(*, train, download):
+    return MNIST(
         root="data",
         download=download,
         train=train,

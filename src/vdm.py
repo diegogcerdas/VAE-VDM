@@ -5,10 +5,11 @@ from torch.special import expm1
 from tqdm import trange
 
 from utils import maybe_unpack_batch, unsqueeze_right
+from diffusers.models.vae import DiagonalGaussianDistribution
 
 
 class VDM(nn.Module):
-    def __init__(self, model, cfg, image_shape):
+    def __init__(self, model, cfg, image_shape, encoder=None):
         super().__init__()
         self.model = model
         self.cfg = cfg
@@ -20,14 +21,16 @@ class VDM(nn.Module):
             self.gamma = LearnedLinearSchedule(cfg.gamma_min, cfg.gamma_max)
         else:
             raise ValueError(f"Unknown noise schedule {cfg.noise_schedule}")
+        self.encoder = encoder
+        assert cfg.use_encoder == (encoder is not None), "encoder must be provided iff argument use_encoder is True"
 
     @property
     def device(self):
         return next(self.model.parameters()).device
 
     @torch.no_grad()
-    def sample_p_s_t(self, z, t, s, clip_samples):
-        """Samples from p(z_s | z_t, x). Used for standard ancestral sampling."""
+    def sample_p_s_t(self, z, t, s, w, clip_samples):
+        """Samples from p(z_s | z_t, x, w). Used for standard ancestral sampling."""
         gamma_t = self.gamma(t)
         gamma_s = self.gamma(s)
         c = -expm1(gamma_s - gamma_t)
@@ -36,7 +39,8 @@ class VDM(nn.Module):
         sigma_t = sqrt(sigmoid(gamma_t))
         sigma_s = sqrt(sigmoid(gamma_s))
 
-        pred_noise = self.model(z, gamma_t)
+        pred_noise = self.model(z, gamma_t, w)
+
         if clip_samples:
             x_start = (z - sigma_t * pred_noise) / alpha_t
             x_start.clamp_(-1.0, 1.0)
@@ -49,9 +53,13 @@ class VDM(nn.Module):
     @torch.no_grad()
     def sample(self, batch_size, n_sample_steps, clip_samples):
         z = torch.randn((batch_size, *self.image_shape), device=self.device)
+
+        # sample z (encoder)
+        w = torch.randn((batch_size, self.cfg.w_dim), device=self.device)
+
         steps = linspace(1.0, 0.0, n_sample_steps + 1, device=self.device)
         for i in trange(n_sample_steps, desc="sampling"):
-            z = self.sample_p_s_t(z, steps[i], steps[i + 1], clip_samples)
+            z = self.sample_p_s_t(z, steps[i], steps[i + 1], w, clip_samples)
         logprobs = self.log_probs_x_z0(z_0=z)  # (B, C, H, W, vocab_size)
         x = argmax(logprobs, dim=-1)  # (B, C, H, W)
         return x.float() / (self.vocab_size - 1)  # normalize to [0, 1]
@@ -97,7 +105,13 @@ class VDM(nn.Module):
         x_t, gamma_t = self.sample_q_t_0(x=x, times=times, noise=noise)
 
         # Forward through model
-        model_out = self.model(x_t, gamma_t)
+        if self.cfg.use_encoder:
+            enc_out = self.encoder(x)
+            posterior = DiagonalGaussianDistribution(enc_out)
+            w = posterior.sample()
+            model_out = self.model(x_t, gamma_t, w)
+        else:
+            model_out = self.model(x_t, gamma_t)
 
         # *** Diffusion loss (bpd)
         gamma_grad = autograd.grad(  # gamma_grad shape: (B, )
@@ -127,8 +141,14 @@ class VDM(nn.Module):
         # Overall logprob for each image in batch.
         recons_loss = -log_probs.sum((1, 2, 3)) * bpd_factor
 
+        # *** Encoder loss (bpd): KL divergence from p(z)=N(0, 1) to q_phi(z | x)
+        if self.cfg.use_encoder:
+            encoder_loss = kl_std_normal(posterior.mean**2, posterior.var).sum(dim=-1) * bpd_factor
+        else:
+            encoder_loss = torch.zeros_like(recons_loss, requires_grad=False)
+
         # *** Overall loss in bpd. Shape (B, ).
-        loss = diffusion_loss + latent_loss + recons_loss
+        loss = diffusion_loss + latent_loss + recons_loss + encoder_loss
 
         with torch.no_grad():
             gamma_0 = self.gamma(torch.tensor([0.0], device=self.device))
@@ -137,6 +157,7 @@ class VDM(nn.Module):
             "diff_loss": diffusion_loss.mean(),
             "latent_loss": latent_loss.mean(),
             "loss_recon": recons_loss.mean(),
+            "encoder_loss": encoder_loss.mean(),
             "gamma_0": gamma_0.item(),
             "gamma_1": gamma_1.item(),
         }

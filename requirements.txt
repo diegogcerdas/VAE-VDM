@@ -9,3 +9,4 @@ torch==1.13.1
 torchinfo==1.7.2
 torchvision==0.14.1
 tqdm==4.64.1
+diffusers
