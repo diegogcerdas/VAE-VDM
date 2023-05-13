@@ -30,7 +30,7 @@ from utils import (
     sample_batched,
 )
 from vdm import VDM
-from vdm_unet import UNetVDMz, UNetVDM
+from vdm_unet import UNetVDM
 from encoder import Encoder
 
 
@@ -85,12 +85,8 @@ def main():
         cfg.input_channels = 3
         shape = (cfg.input_channels, 32, 32)
 
-    if cfg.use_encoder:
-        model = UNetVDMz(cfg)
-        encoder = Encoder(shape, cfg)
-    else:
-        model = UNetVDM(cfg)
-        encoder = None
+    model = UNetVDM(cfg)
+    encoder = Encoder(shape, cfg) if cfg.use_encoder else None
     print_model_summary(model, batch_size=cfg.batch_size, shape=shape, w_dim=cfg.w_dim, encoder=encoder)
 
     if args.use_mnist:

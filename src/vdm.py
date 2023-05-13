@@ -21,16 +21,18 @@ class VDM(nn.Module):
             self.gamma = LearnedLinearSchedule(cfg.gamma_min, cfg.gamma_max)
         else:
             raise ValueError(f"Unknown noise schedule {cfg.noise_schedule}")
-        self.encoder = encoder
         assert cfg.use_encoder == (encoder is not None), "encoder must be provided iff argument use_encoder is True"
+        self.encoder = encoder
 
     @property
     def device(self):
         return next(self.model.parameters()).device
 
     @torch.no_grad()
-    def sample_p_s_t(self, z, t, s, w, clip_samples):
+    def sample_p_s_t(self, z, t, s, clip_samples, w=None):
         """Samples from p(z_s | z_t, x, w). Used for standard ancestral sampling."""
+        assert self.cfg.use_encoder == (w is not None), "w must be provided iff use_encoder is True"
+
         gamma_t = self.gamma(t)
         gamma_s = self.gamma(s)
         c = -expm1(gamma_s - gamma_t)
@@ -39,7 +41,10 @@ class VDM(nn.Module):
         sigma_t = sqrt(sigmoid(gamma_t))
         sigma_s = sqrt(sigmoid(gamma_s))
 
-        pred_noise = self.model(z, gamma_t, w)
+        if w is not None:
+            pred_noise = self.model(z, gamma_t, w)
+        else:
+            pred_noise = self.model(z, gamma_t)
 
         if clip_samples:
             x_start = (z - sigma_t * pred_noise) / alpha_t
@@ -54,12 +59,12 @@ class VDM(nn.Module):
     def sample(self, batch_size, n_sample_steps, clip_samples):
         z = torch.randn((batch_size, *self.image_shape), device=self.device)
 
-        # sample z (encoder)
-        w = torch.randn((batch_size, self.cfg.w_dim), device=self.device)
+        # sample w (encoder)
+        w = torch.randn((batch_size, self.cfg.w_dim), device=self.device) if self.cfg.use_encoder else None
 
         steps = linspace(1.0, 0.0, n_sample_steps + 1, device=self.device)
         for i in trange(n_sample_steps, desc="sampling"):
-            z = self.sample_p_s_t(z, steps[i], steps[i + 1], w, clip_samples)
+            z = self.sample_p_s_t(z, steps[i], steps[i + 1], clip_samples, w=w)
         logprobs = self.log_probs_x_z0(z_0=z)  # (B, C, H, W, vocab_size)
         x = argmax(logprobs, dim=-1)  # (B, C, H, W)
         return x.float() / (self.vocab_size - 1)  # normalize to [0, 1]
@@ -141,7 +146,7 @@ class VDM(nn.Module):
         # Overall logprob for each image in batch.
         recons_loss = -log_probs.sum((1, 2, 3)) * bpd_factor
 
-        # *** Encoder loss (bpd): KL divergence from p(z)=N(0, 1) to q_phi(z | x)
+        # *** Encoder loss (bpd): KL divergence from p(w)=N(0, 1) to q_phi(w | x)
         if self.cfg.use_encoder:
             encoder_loss = kl_std_normal(posterior.mean**2, posterior.var).sum(dim=-1) * bpd_factor
         else:

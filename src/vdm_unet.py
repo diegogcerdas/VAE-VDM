@@ -15,19 +15,25 @@ class UNetVDM(nn.Module):
             n_channels=cfg.embedding_dim,
             norm_groups=cfg.norm_groups,
         )
+        if cfg.use_encoder:
+            t_cond_dim = cfg.w_dim
+            condition_dim = t_cond_dim + cfg.w_dim
+        else:
+            t_cond_dim = 4 * cfg.embedding_dim
+            condition_dim = t_cond_dim
         resnet_params = dict(
             ch_in=cfg.embedding_dim,
             ch_out=cfg.embedding_dim,
-            condition_dim=4 * cfg.embedding_dim,
+            condition_dim=condition_dim,
             dropout_prob=cfg.dropout_prob,
             norm_groups=cfg.norm_groups,
         )
         if cfg.use_fourier_features:
             self.fourier_features = FourierFeatures()
         self.embed_conditioning = nn.Sequential(
-            nn.Linear(cfg.embedding_dim, cfg.embedding_dim * 4),
+            nn.Linear(cfg.embedding_dim, t_cond_dim),
             nn.SiLU(),
-            nn.Linear(cfg.embedding_dim * 4, cfg.embedding_dim * 4),
+            nn.Linear(t_cond_dim, t_cond_dim),
             nn.SiLU(),
         )
         total_input_ch = cfg.input_channels
@@ -68,15 +74,19 @@ class UNetVDM(nn.Module):
             zero_init(nn.Conv2d(cfg.embedding_dim, cfg.input_channels, 3, padding=1)),
         )
 
-    def forward(self, z, g_t):
+    def forward(self, z, g_t, w=None):
+        assert self.cfg.use_encoder == (w is not None), "w must be provided iff use_encoder is True."
+
         # Get gamma to shape (B, ).
         g_t = g_t.expand(z.shape[0])  # assume shape () or (1,) or (B,)
         assert g_t.shape == (z.shape[0],)
         # Rescale to [0, 1], but only approximately since gamma0 & gamma1 are not fixed.
         t = (g_t - self.cfg.gamma_min) / (self.cfg.gamma_max - self.cfg.gamma_min)
         t_embedding = get_timestep_embedding(t, self.cfg.embedding_dim)
-        # We will condition on time embedding.
+        # We will condition on time embedding and w, if applicable.
         cond = self.embed_conditioning(t_embedding)
+        if self.cfg.use_encoder:
+            cond = torch.cat([cond, w], dim=-1)
 
         h = self.maybe_concat_fourier(z)
         h = self.conv_in(h)  # (B, embedding_dim, H, W)
@@ -272,100 +282,3 @@ class UpDownBlock(nn.Module):
         if self.attention_block is not None:
             x = self.attention_block(x)
         return x
-
-
-class UNetVDMw(UNetVDM):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-        self.cfg = cfg
-
-        attention_params = dict(
-            n_heads=cfg.n_attention_heads,
-            n_channels=cfg.embedding_dim,
-            norm_groups=cfg.norm_groups,
-        )
-        resnet_params = dict(
-            ch_in=cfg.embedding_dim,
-            ch_out=cfg.embedding_dim,
-            condition_dim=4 * cfg.embedding_dim + cfg.w_dim,
-            dropout_prob=cfg.dropout_prob,
-            norm_groups=cfg.norm_groups,
-        )
-        if cfg.use_fourier_features:
-            self.fourier_features = FourierFeatures()
-        self.embed_conditioning = nn.Sequential(
-            nn.Linear(cfg.embedding_dim, cfg.embedding_dim * 4),
-            nn.SiLU(),
-            nn.Linear(cfg.embedding_dim * 4, cfg.embedding_dim * 4),
-            nn.SiLU(),
-        )
-        total_input_ch = cfg.input_channels
-        if cfg.use_fourier_features:
-            total_input_ch *= 1 + self.fourier_features.num_features
-        self.conv_in = nn.Conv2d(total_input_ch, cfg.embedding_dim, 3, padding=1)
-
-        # Down path: n_blocks blocks with a resnet block and maybe attention.
-        self.down_blocks = nn.ModuleList(
-            UpDownBlock(
-                resnet_block=ResnetBlock(**resnet_params),
-                attention_block=AttentionBlock(**attention_params)
-                if cfg.attention_everywhere
-                else None,
-            )
-            for _ in range(cfg.n_blocks)
-        )
-
-        self.mid_resnet_block_1 = ResnetBlock(**resnet_params)
-        self.mid_attn_block = AttentionBlock(**attention_params)
-        self.mid_resnet_block_2 = ResnetBlock(**resnet_params)
-
-        # Up path: n_blocks+1 blocks with a resnet block and maybe attention.
-        resnet_params["ch_in"] *= 2  # double input channels due to skip connections
-        self.up_blocks = nn.ModuleList(
-            UpDownBlock(
-                resnet_block=ResnetBlock(**resnet_params),
-                attention_block=AttentionBlock(**attention_params)
-                if cfg.attention_everywhere
-                else None,
-            )
-            for _ in range(cfg.n_blocks + 1)
-        )
-
-        self.conv_out = nn.Sequential(
-            nn.GroupNorm(num_groups=cfg.norm_groups, num_channels=cfg.embedding_dim),
-            nn.SiLU(),
-            zero_init(nn.Conv2d(cfg.embedding_dim, cfg.input_channels, 3, padding=1)),
-        )
-
-    def forward(self, z, g_t, w):
-        # Get gamma to shape (B, ).
-        g_t = g_t.expand(z.shape[0])  # assume shape () or (1,) or (B,)
-        assert g_t.shape == (z.shape[0],)
-        # Rescale to [0, 1], but only approximately since gamma0 & gamma1 are not fixed.
-        t = (g_t - self.cfg.gamma_min) / (self.cfg.gamma_max - self.cfg.gamma_min)
-        t_embedding = get_timestep_embedding(t, self.cfg.embedding_dim)
-        # We will condition on time embedding and z_enc.
-        t_cond = self.embed_conditioning(t_embedding)
-        cond = torch.cat([t_cond, w], dim=-1)  # TODO check same dimensions
-
-        h = self.maybe_concat_fourier(z)
-        h = self.conv_in(h)  # (B, embedding_dim, H, W)
-        hs = []
-        for down_block in self.down_blocks:  # n_blocks times
-            hs.append(h)
-            h = down_block(h, cond)
-        hs.append(h)
-        h = self.mid_resnet_block_1(h, cond)
-        h = self.mid_attn_block(h)
-        h = self.mid_resnet_block_2(h, cond)
-        for up_block in self.up_blocks:  # n_blocks+1 times
-            h = torch.cat([h, hs.pop()], dim=1)
-            h = up_block(h, cond)
-        prediction = self.conv_out(h)
-        assert prediction.shape == z.shape, (prediction.shape, z.shape)
-        return prediction + z
-
-    def maybe_concat_fourier(self, z):
-        if self.cfg.use_fourier_features:
-            return torch.cat([z, self.fourier_features(z)], dim=1)
-        return z
