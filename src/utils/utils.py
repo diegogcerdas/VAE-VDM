@@ -50,6 +50,7 @@ class Config:
     ema_update_every: int
     ema_power: float
     resume: bool
+    seed: int
 
 
 def has_int_squareroot(num):
