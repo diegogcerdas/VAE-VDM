@@ -1,3 +1,5 @@
+# VAE-VDM: Representation Learning with Variational Diffusion Models
+
 ## Setup
 
 The environment can be set up with `requirements.txt`. For example with conda:
@@ -34,10 +36,10 @@ and generates samples.
 ## Evaluating from checkpoint
 
 ```bash
-python eval.py --results-path results/my_experiment/ --n-sample-steps 1000
+python src/eval.py --results-path results/my_experiment/ --n-sample-steps 1000
 ```
 
 
 ## Credits
 
-The code is based on [this repo](https://github.com/addtt/variational-diffusion-models), which at the same time is based on VDM [paper](https://arxiv.org/abs/2107.00630) and [official code](https://github.com/google-research/vdm).
+The code is based on [this repo](https://github.com/addtt/variational-diffusion-models), a PyTorch implementation of [Variational Diffusion Models](https://arxiv.org/abs/2107.00630). The official implementation in JAX can be found [here](https://github.com/google-research/vdm).
