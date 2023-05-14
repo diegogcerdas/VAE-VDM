@@ -28,11 +28,11 @@ class Evaluator:
     ):
         self.cfg = config
         self.num_samples = config.num_samples
-        self.n_sample_steps = config.n_sample_steps
+        self.n_sample_steps = config.num_sample_steps
         self.clip_samples = config.clip_samples
         self.device = config.device
         self.eval_batch_size = config.eval_batch_size
-        self.n_samples_for_eval = config.n_samples_for_eval
+        self.n_samples_for_eval = config.num_samples
         assert has_int_squareroot(
             self.num_samples
         ), "num_samples must have an integer sqrt"
@@ -47,7 +47,7 @@ class Evaluator:
                 device=self.device,
                 shuffle=False,
                 pin_memory=True,
-                num_workers=self.num_dataloader_workers,
+                num_workers=config.num_workers,
                 drop_last=True,
             )
 

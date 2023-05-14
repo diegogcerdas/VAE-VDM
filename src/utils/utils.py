@@ -51,6 +51,8 @@ class Config:
     ema_power: float
     resume: bool
     seed: int
+    device: str
+    eval_batch_size: int
 
 
 def has_int_squareroot(num):
