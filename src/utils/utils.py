@@ -1,29 +1,21 @@
-import dataclasses
-import json
 import math
-import warnings
-from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
-
-import numpy as np
-import torch
-import torchinfo
-import yaml
-from accelerate import Accelerator
-from torch import nn
 from torch.utils.data import DataLoader
+import torch
+from datetime import datetime
+from collections import defaultdict
+import numpy as np
+from torch import nn
 from torchvision import transforms
 from torchvision.datasets import CIFAR10, MNIST
-from tqdm.auto import tqdm
-
-from diffusers.models.vae import DiagonalGaussianDistribution
+from utils.logging import log
+from pathlib import Path
+import yaml
+import dataclasses
 
 
 @dataclass
-class TrainConfig:
+class Config:
     use_mnist: bool
     use_encoder: bool
     w_dim: int
@@ -47,40 +39,17 @@ class TrainConfig:
     weight_decay: float
     clip_grad_norm: bool
     encoder_loss_weight: float
-
-
-def print_model_summary(model, *, batch_size, shape, w_dim, depth=4, batch_size_torchinfo=1, encoder=None):
-    if encoder is None:
-        input = [(batch_size_torchinfo, *shape), (batch_size_torchinfo,)]
-    else:
-        input = [(batch_size_torchinfo, *shape), (batch_size_torchinfo,), (batch_size_torchinfo, w_dim)]
-    summary = torchinfo.summary(
-        model,
-        input,
-        depth=depth,
-        col_names=["input_size", "output_size", "num_params"],
-        verbose=0,  # quiet
-    )
-    log(summary)
-    if batch_size is None or batch_size == batch_size_torchinfo:
-        return
-    output_bytes_large = summary.total_output_bytes / batch_size_torchinfo * batch_size
-    total_bytes = summary.total_input + output_bytes_large + summary.total_param_bytes
-    log(
-        f"\n--- With batch size {batch_size} ---\n"
-        f"Forward/backward pass size: {output_bytes_large / 1e9:0.2f} GB\n"
-        f"Estimated Total Size: {total_bytes / 1e9:0.2f} GB\n"
-        + "=" * len(str(summary).splitlines()[-1])
-        + "\n"
-    )
-    log("{:,}".format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
-
-
-def cycle(dl):
-    # We don't use itertools.cycle because it caches the entire iterator.
-    while True:
-        for data in dl:
-            yield data
+    num_samples: int
+    eval_every: int
+    train_num_steps: int
+    num_sample_steps: int
+    clip_samples: bool
+    num_workers: int
+    results_path: str
+    ema_decay: float
+    ema_update_every: int
+    ema_power: float
+    resume: bool
 
 
 def has_int_squareroot(num):
@@ -123,56 +92,6 @@ class DeviceAwareDataLoader(DataLoader):
             return batch
 
 
-def evaluate_model(model, dataloader):
-    all_metrics = defaultdict(list)
-    for batch in tqdm(dataloader, desc="evaluation"):
-        loss, metrics = model(batch)
-        for k, v in metrics.items():
-            try:
-                v = v.item()
-            except AttributeError:
-                pass
-            all_metrics[k].append(v)
-    return {k: sum(v) / len(v) for k, v in all_metrics.items()}  # average over dataset
-
-
-def additional_metrics(model, dataloader):
-    def log_prob(sample, posterior):
-        nll = posterior.nll(sample, dims=1)
-        return -nll
-    
-    metrics = {}
-
-    if model.encoder is not None:
-        # Mutual information
-        enc_out = []
-        for batch in tqdm(dataloader, desc="evaluation"):
-            x = batch[0]
-            out = model.encoder(x)
-            enc_out.append(out)
-        enc_out = torch.cat(enc_out, dim=0)
-        posterior = DiagonalGaussianDistribution(enc_out)
-        samples = posterior.sample()
-        log_probs = [log_prob(sample, posterior) for sample in samples]
-        log_probs = torch.stack(log_probs, dim=0)
-        M = log_probs.shape[0]
-        mi = torch.tensor([log_probs[i, i] - torch.sum(log_probs[i, :]) / M for i in range(M)]).mean()
-        metrics["mi"] = mi.item()
-    
-    return metrics
-
-
-def log_and_save_metrics(avg_metrics, dataset_split, step, filename):
-    log(f"\n{dataset_split} metrics:")
-    for k, v in avg_metrics.items():
-        log(f"    {k}: {v}")
-
-    avg_metrics = {"step": step, "set": dataset_split, **avg_metrics}
-    with open(filename, "a") as f:
-        json.dump(avg_metrics, f)
-        f.write("\n")
-
-
 def dict_stats(dictionaries: list[dict]) -> dict:
     """Computes the average and standard deviation of metrics in a list of dictionaries.
 
@@ -200,17 +119,6 @@ def dict_stats(dictionaries: list[dict]) -> dict:
         stats[f"{k}_avg"] = np.mean(v)
         stats[f"{k}_std"] = np.std(v)
     return stats
-
-
-def evaluate_model_and_log(model, dataloader, filename, split, step=None, n=1):
-    # Call evaluate_model multiple times. Each call returns a dictionary of metrics, and
-    # we then compute their average and standard deviation.
-    if n > 1:
-        log(f"\nRunning {n} evaluations to compute average metrics")
-    metrics = dict_stats([evaluate_model(model, dataloader) for _ in range(n)])
-    add_metrics = additional_metrics(model, dataloader)
-    metrics.update(add_metrics)
-    log_and_save_metrics(metrics, split, step, filename)
 
 
 @torch.no_grad()
@@ -278,23 +186,3 @@ def check_config_matches_checkpoint(config, checkpoint_path):
             f"> Config:\n    {config_str}\n\n"
             f"> Checkpoint:\n    {ckpt_str}\n\n"
         )
-
-
-_accelerator: Optional[Accelerator] = None
-
-
-def init_logger(accelerator: Accelerator):
-    global _accelerator
-    if _accelerator is not None:
-        raise ValueError("Accelerator already set")
-    _accelerator = accelerator
-
-
-def log(message):
-    global _accelerator
-    if _accelerator is None:
-        warnings.warn("Accelerator not set, using print instead.")
-        print_fn = print
-    else:
-        print_fn = _accelerator.print
-    print_fn(message)

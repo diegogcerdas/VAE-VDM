@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 from torch import einsum, nn, pi, softmax
-
-from utils import zero_init
+from utils.utils import zero_init
 
 
 class UNetVDM(nn.Module):
@@ -75,7 +74,9 @@ class UNetVDM(nn.Module):
         )
 
     def forward(self, z, g_t, w=None):
-        assert self.cfg.use_encoder == (w is not None), "w must be provided iff use_encoder is True."
+        assert self.cfg.use_encoder == (
+            w is not None
+        ), "w must be provided iff use_encoder is True."
 
         # Get gamma to shape (B, ).
         g_t = g_t.expand(z.shape[0])  # assume shape () or (1,) or (B,)

@@ -3,8 +3,7 @@ import torch
 from torch import allclose, argmax, autograd, exp, linspace, nn, sigmoid, sqrt
 from torch.special import expm1
 from tqdm import trange
-
-from utils import maybe_unpack_batch, unsqueeze_right
+from utils.utils import maybe_unpack_batch, unsqueeze_right
 from diffusers.models.vae import DiagonalGaussianDistribution
 
 
@@ -21,7 +20,9 @@ class VDM(nn.Module):
             self.gamma = LearnedLinearSchedule(cfg.gamma_min, cfg.gamma_max)
         else:
             raise ValueError(f"Unknown noise schedule {cfg.noise_schedule}")
-        assert cfg.use_encoder == (encoder is not None), "encoder must be provided iff argument use_encoder is True"
+        assert cfg.use_encoder == (
+            encoder is not None
+        ), "encoder must be provided iff argument use_encoder is True"
         self.encoder = encoder
 
     @property
@@ -31,7 +32,9 @@ class VDM(nn.Module):
     @torch.no_grad()
     def sample_p_s_t(self, z, t, s, clip_samples, w=None):
         """Samples from p(z_s | z_t, x, w). Used for standard ancestral sampling."""
-        assert self.cfg.use_encoder == (w is not None), "w must be provided iff use_encoder is True"
+        assert self.cfg.use_encoder == (
+            w is not None
+        ), "w must be provided iff use_encoder is True"
 
         gamma_t = self.gamma(t)
         gamma_s = self.gamma(s)
@@ -60,7 +63,11 @@ class VDM(nn.Module):
         z = torch.randn((batch_size, *self.image_shape), device=self.device)
 
         # sample w (encoder)
-        w = torch.randn((batch_size, self.cfg.w_dim), device=self.device) if self.cfg.use_encoder else None
+        w = (
+            torch.randn((batch_size, self.cfg.w_dim), device=self.device)
+            if self.cfg.use_encoder
+            else None
+        )
 
         steps = linspace(1.0, 0.0, n_sample_steps + 1, device=self.device)
         for i in trange(n_sample_steps, desc="sampling"):
@@ -148,7 +155,10 @@ class VDM(nn.Module):
 
         # *** Encoder loss (bpd): KL divergence from p(w)=N(0, 1) to q_phi(w | x)
         if self.cfg.use_encoder:
-            encoder_loss = kl_std_normal(posterior.mean**2, posterior.var).sum(dim=-1) * bpd_factor
+            encoder_loss = (
+                kl_std_normal(posterior.mean**2, posterior.var).sum(dim=-1)
+                * bpd_factor
+            )
             encoder_loss = encoder_loss * self.cfg.encoder_loss_weight
 
         # *** Overall loss in bpd. Shape (B, ).
