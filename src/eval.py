@@ -6,9 +6,9 @@ from accelerate.utils import set_seed
 from utils.logging import print_model_summary
 from utils.utils import make_cifar, make_mnist, Config
 from utils.evaluation import Evaluator
-from vdm import VDM
-from vdm_unet import UNetVDM
-from encoder import Encoder
+from models.vdm import VDM
+from models.vdm_unet import UNetVDM
+from models.encoder import Encoder
 
 
 def main():

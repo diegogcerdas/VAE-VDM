@@ -1,7 +1,7 @@
 from functools import partial
 import torch
 from torch import nn
-from vdm_unet import get_timestep_embedding
+from models.vdm_unet import get_timestep_embedding
 from diffusers.models.vae import Encoder as E
 
 

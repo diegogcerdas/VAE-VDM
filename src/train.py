@@ -6,9 +6,9 @@ from accelerate.utils import set_seed
 from utils.training import Trainer
 from utils.logging import init_logger, print_model_summary
 from utils.utils import make_cifar, make_mnist, Config, init_config_from_args
-from vdm import VDM
-from vdm_unet import UNetVDM
-from encoder import Encoder
+from models.vdm import VDM
+from models.vdm_unet import UNetVDM
+from models.encoder import Encoder
 
 
 def main():
