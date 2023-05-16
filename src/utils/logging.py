@@ -66,4 +66,7 @@ def log(message):
         print_fn = print
     else:
         print_fn = _accelerator.print
-    print_fn(message)
+    try:
+        print_fn(message)
+    except:
+        None

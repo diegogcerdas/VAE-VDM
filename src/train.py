@@ -63,6 +63,8 @@ def main():
     parser.add_argument("--ema-decay", type=float, default=0.9999)
     parser.add_argument("--ema-update-every", type=int, default=1)
     parser.add_argument("--ema-power", type=float, default=0.75)
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--eval-batch-size", type=int, default=8)
     args = parser.parse_args()
 
     set_seed(args.seed)
