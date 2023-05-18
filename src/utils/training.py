@@ -133,11 +133,11 @@ class Trainer:
 
     @torch.no_grad()
     def eval(self):
-        self.save_checkpoint()
         self.sample_images(self.ema.ema_model, is_ema=True)
         self.sample_images(self.diffusion_model, is_ema=False)
         self.evaluate_ema_model_and_log(validation=True)
         self.evaluate_ema_model_and_log(validation=False)
+        self.save_checkpoint()
 
     def evaluate_ema_model_and_log(self, *, validation):
         evaluate_model_and_log(

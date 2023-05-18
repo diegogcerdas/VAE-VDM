@@ -16,6 +16,7 @@ from ema_pytorch import EMA
 import yaml
 from collections import defaultdict
 from diffusers.models.vae import DiagonalGaussianDistribution
+from torchmetrics.image.fid import FrechetInceptionDistance
 
 
 class Evaluator:
@@ -144,6 +145,22 @@ def additional_metrics(model, dataloader):
             [log_probs[i, i] - torch.sum(log_probs[i, :]) / M for i in range(M)]
         ).mean()
         metrics["mi"] = mi.item()
+
+    # FID score
+
+    batch = next(iter(dataloader))
+    x = batch[0]
+
+    x_gen = model.sample(x.size(0), 250, False)
+    # convert from [0.,1.] to [0,255]; MNIST: repeat single bw channel to 3 rbg channels
+    x = (x.cpu() * 255).to(torch.uint8).repeat(1, 3, 1, 1)
+    x_gen = (x_gen.cpu() * 255).to(torch.uint8).repeat(1, 3, 1, 1)
+
+    fid = FrechetInceptionDistance()
+    fid.update(x, real=True)
+    fid.update(x_gen, real=False)
+    fid_score = fid.compute()
+    metrics["fid"] = fid_score.item()
 
     return metrics
 
