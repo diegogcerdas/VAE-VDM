@@ -95,7 +95,7 @@ class VDM(nn.Module):
             times = torch.rand(batch_size, device=self.device)
         return times
 
-    def forward(self, batch, *, noise=None):
+    def forward(self, batch, *, noise=None, return_reconstruction=False):
         x, label = maybe_unpack_batch(batch)
         assert x.shape[1:] == self.image_shape
         assert 0.0 <= x.min() and x.max() <= 1.0
@@ -178,7 +178,11 @@ class VDM(nn.Module):
         }
         if self.cfg.use_encoder:
             metrics["encoder_loss"] = encoder_loss.mean()
-        return loss.mean(), metrics
+
+        if return_reconstruction:
+            return model_out
+        else:
+            return loss.mean(), metrics
 
     def log_probs_x_z0(self, x=None, z_0=None):
         """Computes log p(x | z_0) for all possible values of x.
