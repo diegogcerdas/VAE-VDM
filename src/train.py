@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--n-blocks", type=int, default=32)
     parser.add_argument("--n-attention-heads", type=int, default=1)
     parser.add_argument("--dropout-prob", type=float, default=0.1)
-    parser.add_argument("--norm-groups", type=int, default=32)
+    parser.add_argument("--norm-groups", type=int, default=8)
     parser.add_argument("--input-channels", type=int, default=3)
     parser.add_argument(
         "--use-fourier-features", action=BooleanOptionalAction, default=False
