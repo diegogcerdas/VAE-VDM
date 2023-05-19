@@ -16,7 +16,6 @@ from eval import Evaluator
 def load_checkpoint(diffusion_model, checkpoint_file, device):
     data = torch.load(checkpoint_file, map_location=device)
     diffusion_model.load_state_dict(data["model"])
-    load_state_dict(data["ema"])
 def vis_reconstruction(image, model, save_path=None):
     output = model.forward(image, return_reconstruction=True)
     #plot with image on left and output on right
@@ -24,7 +23,7 @@ def vis_reconstruction(image, model, save_path=None):
     axs[0].imshow(image.squeeze(0).permute(1, 2, 0))
     axs[0].set_title('Ground truth')
     axs[1].imshow(output.squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
-    axs[1].set_title('Reconstruction')
+    axs[1].set_title('Reconstruction1')
     if save_path is not None:
         plt.savefig(save_path)
     plt.show()
@@ -50,14 +49,12 @@ def main():
     if cfg.use_mnist:
         cfg.input_channels = 1
         shape = (cfg.input_channels, 28, 28)
-        train_set = make_mnist(train=True, download=True, root_path=args.data_path)
         validation_set = make_mnist(
             train=False, download=False, root_path=args.data_path
         )
     else:
         cfg.input_channels = 3
         shape = (cfg.input_channels, 32, 32)
-        train_set = make_cifar(train=True, download=True, root_path=args.data_path)
         validation_set = make_cifar(
             train=False, download=False, root_path=args.data_path
         )
@@ -68,7 +65,7 @@ def main():
     print_model_summary(
         model, batch_size=None, shape=shape, w_dim=cfg.w_dim, encoder=encoder
     )
-    load_checkpoint(diffusion, "model.pt",device)
+    load_checkpoint(diffusion, "model.pt", device)
     for i in range(3):
         image = validation_set[i][0].unsqueeze(0)
         vis_reconstruction(image, diffusion)
