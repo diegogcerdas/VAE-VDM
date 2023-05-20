@@ -11,3 +11,7 @@ torchvision==0.14.1
 tqdm==4.64.1
 diffusers
 torchmetrics[image]
+ipykernel
+scikit-learn
+matplotlib
+numpy

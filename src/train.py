@@ -11,7 +11,7 @@ from models.vdm_unet import UNetVDM
 from models.encoder import Encoder
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser()
 
     # Dataset
@@ -66,12 +66,10 @@ def main():
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--eval-batch-size", type=int, default=8)
     args = parser.parse_args()
+    return args
 
-    set_seed(args.seed)
-    accelerator = Accelerator(split_batches=True)
-    init_logger(accelerator)
-    cfg = init_config_from_args(Config, args)
 
+def get_datasets(cfg, args, accelerator):
     if cfg.use_mnist:
         cfg.input_channels = 1
         shape = (cfg.input_channels, 28, 28)
@@ -96,6 +94,19 @@ def main():
         validation_set = make_cifar(
             train=False, download=False, root_path=args.data_path
         )
+    return train_set, validation_set, shape
+    
+
+
+def main():
+    args = parse_args()
+    set_seed(args.seed)
+
+    accelerator = Accelerator(split_batches=True)
+    init_logger(accelerator)
+    cfg = init_config_from_args(Config, args)
+
+    train_set, validation_set, shape = get_datasets(cfg, args, accelerator)
 
     model = UNetVDM(cfg)
     encoder = Encoder(shape, cfg) if cfg.use_encoder else None

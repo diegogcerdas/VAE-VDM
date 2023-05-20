@@ -177,6 +177,12 @@ def init_config_from_args(cls, args):
     return cls(**{f.name: getattr(args, f.name) for f in dataclasses.fields(cls)})
 
 
+def load_config_from_yaml(cls, args):
+    with open(Path(args.results_path) / "config.yaml", "r") as f:
+        cfg = cls(**yaml.safe_load(f))
+    return cfg
+
+
 def check_config_matches_checkpoint(config, checkpoint_path):
     with open(checkpoint_path / "config.yaml", "r") as f:
         ckpt_config = yaml.safe_load(f)

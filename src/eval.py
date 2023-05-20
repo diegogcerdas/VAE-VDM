@@ -4,14 +4,14 @@ from argparse import BooleanOptionalAction
 import yaml
 from accelerate.utils import set_seed
 from utils.logging import print_model_summary
-from utils.utils import make_cifar, make_mnist, Config
+from utils.utils import make_cifar, make_mnist, Config, load_config_from_yaml
 from utils.evaluation import Evaluator
 from models.vdm import VDM
 from models.vdm_unet import UNetVDM
 from models.encoder import Encoder
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=12345)
@@ -23,12 +23,10 @@ def main():
     parser.add_argument("--clip-samples", action=BooleanOptionalAction, default=True)
     parser.add_argument("--n-samples-for-eval", type=int, default=1)
     args = parser.parse_args()
-    set_seed(args.seed)
+    return args
 
-    # Load config from YAML.
-    with open(Path(args.results_path) / "config.yaml", "r") as f:
-        cfg = Config(**yaml.safe_load(f))
 
+def get_datasets(cfg, args):
     if cfg.use_mnist:
         cfg.input_channels = 1
         shape = (cfg.input_channels, 28, 28)
@@ -43,6 +41,15 @@ def main():
         validation_set = make_cifar(
             train=False, download=False, root_path=args.data_path
         )
+    return train_set, validation_set, shape
+
+
+def main():
+    args = parse_args()
+    set_seed(args.seed)
+    cfg = load_config_from_yaml(Config, args)
+
+    train_set, validation_set, shape = get_datasets(cfg, args)
 
     model = UNetVDM(cfg)
     encoder = Encoder(shape, cfg) if cfg.use_encoder else None
