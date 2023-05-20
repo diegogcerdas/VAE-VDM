@@ -94,6 +94,7 @@ class Evaluator:
                 self.eval_path / ("ema-metrics.jsonl" if is_ema else "metrics.jsonl"),
                 "validation" if validation else "train",
                 n=self.n_samples_for_eval,
+                reduced_fid=False,
             )
 
     def sample_images(self, model, *, is_ema):
@@ -121,7 +122,7 @@ def evaluate_model(model, dataloader):
     return {k: sum(v) / len(v) for k, v in all_metrics.items()}  # average over dataset
 
 
-def additional_metrics(model, dataloader):
+def additional_metrics(model, dataloader, reduced_fid=True):
     def log_prob(sample, posterior):
         nll = posterior.nll(sample, dims=1)
         return -nll
@@ -147,7 +148,10 @@ def additional_metrics(model, dataloader):
         metrics["mi"] = mi.item()
 
     # FID score
-    n = int(math.ceil(200/dataloader.batch_size))  # over about 200 images
+    if reduced_fid:
+        n = int(math.ceil(200/dataloader.batch_size))  # over about 200 images
+    else:
+        n = len(dataloader)
     for i, batch in enumerate(dataloader):
         if i >= n:
             break
@@ -172,12 +176,12 @@ def additional_metrics(model, dataloader):
     return metrics
 
 
-def evaluate_model_and_log(model, dataloader, filename, split, step=None, n=1):
+def evaluate_model_and_log(model, dataloader, filename, split, step=None, n=1, reduced_fid=True):
     # Call evaluate_model multiple times. Each call returns a dictionary of metrics, and
     # we then compute their average and standard deviation.
     if n > 1:
         log(f"\nRunning {n} evaluations to compute average metrics")
     metrics = dict_stats([evaluate_model(model, dataloader) for _ in range(n)])
-    add_metrics = additional_metrics(model, dataloader)
+    add_metrics = additional_metrics(model, dataloader, reduced_fid)
     metrics.update(add_metrics)
     log_and_save_metrics(metrics, split, step, filename)
