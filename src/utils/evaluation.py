@@ -131,7 +131,7 @@ def additional_metrics(model, dataloader):
     if model.encoder is not None:
         # Mutual information
         enc_out = []
-        for batch in tqdm(dataloader, desc="evaluation"):
+        for batch in tqdm(dataloader, desc="mi"):
             x = batch[0]
             out = model.encoder(x)
             enc_out.append(out)
@@ -147,18 +147,25 @@ def additional_metrics(model, dataloader):
         metrics["mi"] = mi.item()
 
     # FID score
+    n = int(math.ceil(200/dataloader.batch_size))  # over about 200 images
+    for i, batch in enumerate(dataloader):
+        if i >= n:
+            break
 
-    batch = next(iter(dataloader))
-    x = batch[0]
+        x = batch[0]
+        x_gen = model.sample(x.size(0), 100, False)  # 100 diffusion steps
 
-    x_gen = model.sample(x.size(0), 250, False)
-    # convert from [0.,1.] to [0,255]; MNIST: repeat single bw channel to 3 rbg channels
-    x = (x.cpu() * 255).to(torch.uint8).repeat(1, 3, 1, 1)
-    x_gen = (x_gen.cpu() * 255).to(torch.uint8).repeat(1, 3, 1, 1)
+        # convert from [0.,1.] to [0,255]
+        x = (x.cpu() * 255).to(torch.uint8)
+        x_gen = (x_gen.cpu() * 255).to(torch.uint8)
+        if x.shape[1] == 1:
+            # MNIST: repeat single bw channel to 3 rbg channels
+            x = x.repeat(1, 3, 1, 1)
+            x_gen = x_gen.repeat(1, 3, 1, 1)
 
-    fid = FrechetInceptionDistance()
-    fid.update(x, real=True)
-    fid.update(x_gen, real=False)
+        fid = FrechetInceptionDistance()
+        fid.update(x, real=True)
+        fid.update(x_gen, real=False)
     fid_score = fid.compute()
     metrics["fid"] = fid_score.item()
 
