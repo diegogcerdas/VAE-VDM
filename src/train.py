@@ -65,6 +65,7 @@ def parse_args():
     parser.add_argument("--ema-power", type=float, default=0.75)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--eval-batch-size", type=int, default=8)
+    parser.add_argument("--n-samples-for-eval", type=int, default=1)
     args = parser.parse_args()
     return args
 
