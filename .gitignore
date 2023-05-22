@@ -136,5 +136,4 @@ data/
 results/
 plots/
 Makefile
-*.job
 slurm*
