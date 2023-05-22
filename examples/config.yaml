@@ -21,7 +21,7 @@ lr: 0.0002
 n_attention_heads: 1
 n_blocks: 16
 noise_schedule: fixed_linear
-norm_groups: 32
+norm_groups: 4
 norm_num_groups: 16
 num_sample_steps: 250
 num_samples: 64

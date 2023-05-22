@@ -53,6 +53,7 @@ class Config:
     seed: int
     device: str
     eval_batch_size: int
+    n_samples_for_eval: int
 
 
 def has_int_squareroot(num):

@@ -33,7 +33,7 @@ class Evaluator:
         self.clip_samples = config.clip_samples
         self.device = config.device
         self.eval_batch_size = config.eval_batch_size
-        self.n_samples_for_eval = config.num_samples
+        self.n_samples_for_eval = config.n_samples_for_eval
         assert has_int_squareroot(
             self.num_samples
         ), "num_samples must have an integer sqrt"
