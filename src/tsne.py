@@ -4,6 +4,7 @@ import argparse
 import torch
 import numpy as np
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from accelerate.utils import set_seed
 
@@ -19,6 +20,8 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--data-path", type=str, default="data")
     parser.add_argument("--results-path", type=str, required=True)
+    parser.add_argument("--mode", type=str, default='tsne', help="tsne or pca")
+    parser.add_argument("--n-points", type=int, default=10_000)
     args = parser.parse_args()
     return args
 
@@ -40,7 +43,9 @@ def setup():
         device="cuda" if torch.cuda.is_available() else "cpu",
         num_sample_steps=250,
         clip_samples=True,
-        n_samples_for_eval=1
+        n_samples_for_eval=1,
+        mode=args.mode,
+        n_points=args.n_points,
     )
     cfg = load_config_from_yaml(Config, args)
 
@@ -77,47 +82,53 @@ def get_embeddings(encoder, dataset, device, n_points=10_000):
     return np.array(embeddings), np.array(labels)
 
 
-def fit_tsne(embeddings, perplexity=40, n_iter=300):
-    tsne = TSNE(n_components=2, verbose=1, perplexity=perplexity, n_iter=n_iter)
-    tsne_embeddings = tsne.fit_transform(embeddings)
+def fit_manifold(embeddings, perplexity=40, n_iter=300, mode='tsne'):
+    if mode == 'tsne':
+        fitter = TSNE(n_components=2, verbose=1, perplexity=perplexity, n_iter=n_iter)
+    elif mode == 'pca':
+        fitter = PCA(n_components=2)
+    else:
+        raise ValueError("mode must be one of ['tsne', 'pca']")
+    tsne_embeddings = fitter.fit_transform(embeddings)
     return tsne_embeddings
 
 
-def plot_tsne(tsne_embeddings, labels, title, save_path=None):
+def plot_manifold(manifold_embeddings, labels, title, save_path=None):
     plt.figure(figsize=(10, 10))
-    plt.scatter(tsne_embeddings[:, 0], tsne_embeddings[:, 1], c=labels, cmap='tab10')
+    plt.scatter(manifold_embeddings[:, 0], manifold_embeddings[:, 1], c=labels, cmap='tab10')
     plt.title(title)
     plt.colorbar()
     if save_path is not None:
         plt.savefig(save_path)
+        print('saved at {}'.format(save_path))
     plt.show()
 
 
-def generate_tsne_plot(enc, dset, device, n_points=10_000):
+def generate_tsne_plot(enc, dset, device, n_points=10_000, step=0, mode='tsne'):
     enc_emb, enc_labels = get_embeddings(enc, dset, device, n_points=n_points)
-    enc_tsne = fit_tsne(enc_emb)
-    path = args.results_path / 'encoder_tsne-{}.png'.format(step)
-    plot_tsne(enc_tsne, enc_labels, 'Encoder', save_path=path)
-    print('saved at {}'.format(path))
+    enc_manifold = fit_manifold(enc_emb, mode=mode)
+    path = args.results_path / 'encoder_{mode}-{step}.png'.format(mode=mode, step=step)
+    plot_manifold(enc_manifold, enc_labels, 'Encoder', save_path=path)
 
 
 if __name__ == '__main__':
-    # generate trained random encoder vs trained encoder tsne plots for latest checkpoint
     args, enc, renc, vset, step = setup()
     print('[SETUP] done')
 
     # random encoder
-    renc_emb, renc_labels = get_embeddings(renc, vset, args.device)
+    print('[RANDOM] start')
+    renc_emb, renc_labels = get_embeddings(renc, vset, args.device, n_points=args.n_points)
     print('[RANDOM] done getting embeddings')
-    renc_tsne = fit_tsne(renc_emb)
-    print('[RANDOM] done fitting tsne')
-    plot_tsne(renc_tsne, renc_labels, 'Random Encoder', save_path=args.results_path / 'random_encoder_tsne.png')
-    print('[RANDOM] saved tsne plot')
+    renc_manifold = fit_manifold(renc_emb, mode=args.mode)
+    print('[RANDOM] done fitting manifold')
+    title = 'Random Encoder ({mode})'.format(mode=args.mode)
+    plot_manifold(renc_manifold, renc_labels, title, save_path=args.results_path / 'random_encoder_{mode}.png'.format(mode=args.mode))
 
     # trained encoder
-    enc_emb, enc_labels = get_embeddings(enc, vset, args.device)
+    print('[TRAINED] start')
+    enc_emb, enc_labels = get_embeddings(enc, vset, args.device, n_points=args.n_points)
     print('[TRAINED] done getting embeddings')
-    enc_tsne = fit_tsne(enc_emb)
-    print('[TRAINED] done fitting tsne')
-    plot_tsne(enc_tsne, enc_labels, 'Encoder', save_path=args.results_path / 'encoder_tsne-{step}.png'.format(step=step))
-    print('[TRAINED] saved tsne plot')
+    renc_manifold = fit_manifold(enc_emb, mode=args.mode)
+    print('[TRAINED] done fitting manifold')
+    title = 'Trained Encoder ({mode})'.format(mode=args.mode)
+    plot_manifold(renc_manifold, enc_labels, title, save_path=args.results_path / 'encoder_{mode}-{step}.png'.format(mode=args.mode, step=step))
