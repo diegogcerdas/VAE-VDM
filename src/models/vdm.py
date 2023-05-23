@@ -6,7 +6,6 @@ from tqdm import trange
 from utils.utils import maybe_unpack_batch, unsqueeze_right
 from diffusers.models.vae import DiagonalGaussianDistribution
 
-
 class VDM(nn.Module):
     def __init__(self, model, cfg, image_shape, encoder=None):
         super().__init__()
@@ -180,7 +179,9 @@ class VDM(nn.Module):
             metrics["encoder_loss"] = encoder_loss.mean()
 
         if return_reconstruction:
-            return model_out
+            sigma_t_sq = sigmoid(gamma_t)
+            print(sigma_t_sq)
+            return x_t, (x_t - sigma_t_sq*model_out)/(torch.sqrt(1-sigma_t_sq)), times
         else:
             return loss.mean(), metrics
 

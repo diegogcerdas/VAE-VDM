@@ -17,13 +17,16 @@ def load_checkpoint(diffusion_model, checkpoint_file, device):
     data = torch.load(checkpoint_file, map_location=device)
     diffusion_model.load_state_dict(data["model"])
 def vis_reconstruction(image, model, save_path=None):
-    output = model.forward(image, return_reconstruction=True)
+    forward_output, output, noise_level = model.forward(image, return_reconstruction=True)
     #plot with image on left and output on right
-    fig, axs = plt.subplots(1, 2)
+    fig, axs = plt.subplots(1, 3)
     axs[0].imshow(image.squeeze(0).permute(1, 2, 0))
     axs[0].set_title('Ground truth')
-    axs[1].imshow(output.squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
-    axs[1].set_title('Reconstruction1')
+    axs[1].imshow(forward_output.squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
+    axs[1].set_title(f'Forward pass, noise level:{noise_level.item():.2f}')
+    axs[2].imshow(output.squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
+    axs[2].set_title('Reconstruction')
+    plt.tight_layout()
     if save_path is not None:
         plt.savefig(save_path)
     plt.show()
@@ -66,7 +69,7 @@ def main():
         model, batch_size=None, shape=shape, w_dim=cfg.w_dim, encoder=encoder
     )
     load_checkpoint(diffusion, "model.pt", device)
-    for i in range(3):
+    for i in range(10):
         image = validation_set[i][0].unsqueeze(0)
         vis_reconstruction(image, diffusion)
 
