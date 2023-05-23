@@ -94,7 +94,7 @@ class VDM(nn.Module):
             times = torch.rand(batch_size, device=self.device)
         return times
 
-    def forward(self, batch, *, noise=None, return_reconstruction=False):
+    def forward(self, batch, *, noise=None, return_reconstruction=False, times=None):
         x, label = maybe_unpack_batch(batch)
         assert x.shape[1:] == self.image_shape
         assert 0.0 <= x.min() and x.max() <= 1.0
@@ -110,7 +110,10 @@ class VDM(nn.Module):
         x = 2 * ((img_int + 0.5) / self.vocab_size) - 1
 
         # Sample from q(x_t | x_0) with random t.
-        times = self.sample_times(x.shape[0]).requires_grad_(True)
+        if times is None:
+            times = self.sample_times(x.shape[0]).requires_grad_(True)
+        else:
+            times = torch.tensor(times, device=self.device).requires_grad_(True)
         if noise is None:
             noise = torch.randn_like(x)
         x_t, gamma_t = self.sample_q_t_0(x=x, times=times, noise=noise)

@@ -11,7 +11,14 @@ from models.vdm_unet import UNetVDM
 from models.encoder import Encoder
 import torch
 from eval import Evaluator
+from PIL import Image
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
+def get_concat_h(im1, im2):
+    dst = Image.new('RGB', (im1.width + im2.width, im1.height))
+    dst.paste(im1, (0, 0))
+    dst.paste(im2, (im1.width, 0))
+    return dst
 
 def load_checkpoint(diffusion_model, checkpoint_file, device):
     data = torch.load(checkpoint_file, map_location=device)
@@ -30,6 +37,52 @@ def vis_reconstruction(image, model, save_path=None):
     if save_path is not None:
         plt.savefig(save_path)
     plt.show()
+
+def vis_reconstruct_grid(data_loader, model, grid_size=10, noise_level=0.7):
+    original_images = []
+    reconstructions = []
+    for i, (image, _) in enumerate(data_loader):
+        if i == grid_size**2:
+            break
+        output, _, _ = model.forward(image.unsqueeze(0), return_reconstruction=True, times=noise_level)
+        original_images.append(image)
+        reconstructions.append(output)
+
+    fig, axs = plt.subplots(grid_size, grid_size, figsize=(8, 8))
+
+    for i in range(grid_size):
+        for j in range(grid_size):
+            axs[i, j].imshow(original_images[i * grid_size + j].permute(1, 2, 0))
+            axs[i, j].axis('off')
+
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+    fig.suptitle('Original images', y=0.95, fontsize=16)
+
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+    # Convert the rendered figure to a PIL image
+    original_plot = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
+
+    fig, axs = plt.subplots(grid_size, grid_size, figsize=(8, 8))
+
+    for i in range(grid_size):
+        for j in range(grid_size):
+            axs[i, j].imshow(reconstructions[i * grid_size + j].squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
+            axs[i, j].axis('off')
+
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+    fig.suptitle('Reconstructions', y=0.95, fontsize=16)
+
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+    # Convert the rendered figure to a PIL image
+    reconstruction_plot = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
+    final_plot = get_concat_h(original_plot, reconstruction_plot)
+    final_plot.save('reconstructions.png')
+    final_plot.show()
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -65,13 +118,12 @@ def main():
     model = UNetVDM(cfg)
     encoder = Encoder(shape, cfg) if cfg.use_encoder else None
     diffusion = VDM(model, cfg, image_shape=shape, encoder=encoder)
-    print_model_summary(
-        model, batch_size=None, shape=shape, w_dim=cfg.w_dim, encoder=encoder
-    )
     load_checkpoint(diffusion, "model.pt", device)
-    for i in range(10):
-        image = validation_set[i][0].unsqueeze(0)
-        vis_reconstruction(image, diffusion)
+    vis_reconstruct_grid(validation_set, diffusion)
+
+    # for i in range(10):
+    #     image = validation_set[i][0].unsqueeze(0)
+    #     vis_reconstruction(image, diffusion)
 
 if __name__ == "__main__":
     #check if gpu is available
