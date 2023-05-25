@@ -15,7 +15,7 @@ import dataclasses
 import torch
 import math
 from tqdm.auto import tqdm
-from torchvision.utils import save_image
+from utils.visualization import visualize_sampling
 
 
 class Trainer:
@@ -158,8 +158,7 @@ class Trainer:
             self.n_sample_steps,
             self.clip_samples,
         )
-        path = self.path / f"sample-{'ema-' if is_ema else ''}{self.step}.png"
-        save_image(samples, str(path), nrow=int(math.sqrt(self.num_samples)))
+        visualize_sampling(samples, self.path, is_ema, self.step)
         model.train(train_state)
 
 
