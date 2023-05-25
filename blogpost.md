@@ -6,29 +6,29 @@ In this blog post, we focus on diffusion models, the foundational class of model
 Diffusion models are considered to be in the class of generative models alongside GANs, Normalizing Flows and VAEs and have recently caught attention due to producing high-quality samples while exhibiting excellent fidelity to the training data. [8] work discussed diffusion models for the first time, where-after many extensions and improvements have been published [9][4][5].  Essentially, a diffusion model can be dissected in a forward and reverse diffusion process. The forward process gradually adds noise to the original image, whereas the reverse process can be considered as a neural network that learns to remove noise from data generating an actual image by gradually refining it from a completely noisy state. Let's take a look at diffusion models a bit more in detail and understand how they exactly work.
 
 ## Forward and reverse diffusion process
-For the forward diffusion process, let us assume the real data distribution to be $q(x)$ from which we can sample a data point (image), $\mathbf{x}_0 \sim q(\mathbf{x})$. We can then define the forward diffusion process as
-$q(\mathbf{x}_t \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_t; \sqrt{1 - \beta_t} \mathbf{x}_{t-1}, \beta_t\mathbf{I}) \\ q(\mathbf{x}_{1:T} \vert \mathbf{x}_0) = \prod^T_{t=1} q(\mathbf{x}_t \vert \mathbf{x}_{t-1})$
-where at each time step $t$, the data is updated by adding some Gaussian noise, producing a gradually noisier sequence of samples $x_1, ..., x_T$, where $x_T$ equals an isotropic Gaussian distribution as $T \to \infty$. Hence, at every time step $t$, we can draw  from the conditional Gaussian distribution a new sample $\mathbf{x}_t=\sqrt{1-\beta_t} \mathbf{x}_{t-1}+\sqrt{\beta_t} \epsilon$. By defining the forward process as in \ref{forward},  [8] have shown that we do not need to repeatedly draw from the distribution $q$ to reach a certain sample $x_t$. This formulation is given by:
+For the forward diffusion process, let us assume the real data distribution to be $q(x)$ from which we can sample a data point (image), $\mathbf{x}\_0 \sim q(\mathbf{x})$. We can then define the forward diffusion process as
+$q(\mathbf{x}\_t \vert \mathbf{x}\_{t-1}) = \mathcal{N}(\mathbf{x}\_t; \sqrt{1 - \beta\_t} \mathbf{x}\_{t-1}, \beta\_t\mathbf{I}) \\ q(\mathbf{x}\_{1:T} \vert \mathbf{x}\_0) = \prod^T\_{t=1} q(\mathbf{x}\_t \vert \mathbf{x}\_{t-1})$
+where at each time step $t$, the data is updated by adding some Gaussian noise, producing a gradually noisier sequence of samples $x\_1, ..., x\_T$, where $x\_T$ equals an isotropic Gaussian distribution as $T \to \infty$. Hence, at every time step $t$, we can draw  from the conditional Gaussian distribution a new sample $\mathbf{x}\_t=\sqrt{1-\beta\_t} \mathbf{x}\_{t-1}+\sqrt{\beta\_t} \epsilon$. By defining the forward process as in \ref{forward},  [8] have shown that we do not need to repeatedly draw from the distribution $q$ to reach a certain sample $x\_t$. This formulation is given by:
 
-$q(\mathbf{x}_t \vert \mathbf{x}_0) = \mathcal{N}$ $(\mathbf{x}_t; \sqrt{\bar{\alpha}_t} \mathbf{x}_0, (1 - \bar{\alpha}_t)\mathbf{I})$
+$q(\mathbf{x}\_t \vert \mathbf{x}\_0) = \mathcal{N}$ $(\mathbf{x}\_t; \sqrt{\bar{\alpha}\_t} \mathbf{x}\_0, (1 - \bar{\alpha}\_t)\mathbf{I})$
 
-where we let $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{i=1}^t \alpha_i$. This provides us with to have the flexibility to sample $\mathbf{x}_t$ at any desired noise level, given the condition of $\textbf{x}_0$.
+where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \prod\_{i=1}^t \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
 
 
 ![diff](media/diffprocess.png) 
 
-The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between the $\beta$s and subsequently impacts the performance of the diffusion process [2].  
+The strength of the noise is controlled by a variance scheduler $\{\beta\_t \in (0, 1)\}\_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between the $\beta$s and subsequently impacts the performance of the diffusion process [2].  
 
-Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(x{_t-1} | x_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $x_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $x_0$ from the true distribution. The conditional distribution $p(x_{t-1} | x_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. Therefore, in order to run the reverse diffusion process effectively, it becomes essential to learn a suitable model that can approximate the conditional probabilities. These conditional probabilities play a crucial role in understanding how the data evolves during the diffusion process. By learning a model denoted as $p_{\theta}$, where $\theta$ represents the model's parameters, we aim to capture the intricate relationships and dependencies within the data. The reverse diffusion process can be denoted as: 
+Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(x{\_t-1} | x\_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $x\_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $x\_0$ from the true distribution. The conditional distribution $p(x\_{t-1} | x\_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. Therefore, in order to run the reverse diffusion process effectively, it becomes essential to learn a suitable model that can approximate the conditional probabilities. These conditional probabilities play a crucial role in understanding how the data evolves during the diffusion process. By learning a model denoted as $p\_{\theta}$, where $\theta$ represents the model's parameters, we aim to capture the intricate relationships and dependencies within the data. The reverse diffusion process can be denoted as: 
 
-$p_\theta(\mathbf{x}_{0:T}) = p(\mathbf{x}_T) \prod^T_{t=1} p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t)$
-$p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) = \mathcal{N}(\mathbf{x}_{t-1}; \boldsymbol{\mu}_\theta(\mathbf{x}_t, t), \boldsymbol{\Sigma}_\theta(\mathbf{x}_t, t))$
+$p\_\theta(\mathbf{x}\_{0:T}) = p(\mathbf{x}\_T) \prod^T\_{t=1} p\_\theta(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t)$
+$p\_\theta(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t) = \mathcal{N}(\mathbf{x}\_{t-1}; \boldsymbol{\mu}\_\theta(\mathbf{x}\_t, t), \boldsymbol{\Sigma}\_\theta(\mathbf{x}\_t, t))$
 
 The detailed diffusion processes can be seen schematically in \ref{fig:schematicdiff}. 
 
-Thus, assuming that our model $p_{\theta}$ follows a Gaussian distribution, it is tasked with learning the mean and variance parameterized by $\mu_\theta$ and variance $\Sigma_\theta$, respectively. 
+Thus, assuming that our model $p\_{\theta}$ follows a Gaussian distribution, it is tasked with learning the mean and variance parameterized by $\mu\_\theta$ and variance $\Sigma\_\theta$, respectively. 
 
-In literature there are different approaches as to what to do with the variance. Traditional approaches would set the variance to $\Sigma_\theta(\mathbf{x_t}, t) = \sigma_{t}^{2}\mathbf{I}$ [4]. Nichol et al. (2021) [7] proposed a novel approach where the model itself learns the optimal variance values during the denoising phase. This departure from traditional approaches, resulted in significant improvements in the obtained results.
+In literature there are different approaches as to what to do with the variance. Traditional approaches would set the variance to $\Sigma\_\theta(\mathbf{x\_t}, t) = \sigma\_{t}^{2}\mathbf{I}$ [4]. Nichol et al. (2021) [7] proposed a novel approach where the model itself learns the optimal variance values during the denoising phase. This departure from traditional approaches, resulted in significant improvements in the obtained results.
 
 The idea behind this is that when enabling the model to learn the variance, it gains the flexibility to adapt and adjust the noise reduction process based on the specific characteristics of the data. This dynamic learning of variance allows for a more fine-grained control of the denoising process, leading to enhanced performance and improved results.
 
@@ -36,21 +36,21 @@ The idea behind this is that when enabling the model to learn the variance, it g
 
 As the set-up is similar to a Variational Auto Encoder (VAE) [6], we can use the variational lower bound to optimize the negative log-likelihood to perform training:
 
-$\mathbb{E}\left[-\log p_\theta\left(\mathbf{x}_0\right)\right] \leq \mathbb{E}_q\left[-\log \frac{p_\theta\left(\mathbf{x}_{0: T}\right)}{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}\right]=\mathbb{E}_q\left[-\log p\left(\mathbf{x}_T\right)-\sum_{t \geq 1} \log \frac{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}{q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}\right]=: L$ 
+$\mathbb{E}\left[-\log p\_\theta\left(\mathbf{x}\_0\right)\right] \leq \mathbb{E}\_q\left[-\log \frac{p\_\theta\left(\mathbf{x}\_{0: T}\right)}{q\left(\mathbf{x}\_{1: T} \mid \mathbf{x}\_0\right)}\right]=\mathbb{E}\_q\left[-\log p\left(\mathbf{x}\_T\right)-\sum\_{t \geq 1} \log \frac{p\_\theta\left(\mathbf{x}\_{t-1} \mid \mathbf{x}\_t\right)}{q\left(\mathbf{x}\_t \mid \mathbf{x}\_{t-1}\right)}\right]=: L$ 
 
 In order to make each term in the equation analytically computable, it is possible to further transform the objective function into a composition of multiple KL-divergence and entropy terms:
-$\mathbb{E}_q [\underbrace{D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T))}_{L_T} + \sum_{t=2}^T \underbrace{D_\text{KL}(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t))}_{L_{t-1}} \underbrace{- \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)}_{L_0} ]$
+$\mathbb{E}\_q [\underbrace{D\_\text{KL}(q(\mathbf{x}\_T \vert \mathbf{x}\_0) \parallel p\_\theta(\mathbf{x}\_T))}\_{L\_T} + \sum\_{t=2}^T \underbrace{D\_\text{KL}(q(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t, \mathbf{x}\_0) \parallel p\_\theta(\mathbf{x}\_{t-1} \vert\mathbf{x}\_t))}\_{L\_{t-1}} \underbrace{- \log p\_\theta(\mathbf{x}\_0 \vert \mathbf{x}\_1)}\_{L\_0} ]$
 
 In other words, we have that:
-$L_\text{VLB} = L_T + L_{T-1} + \dots + L_0  
-\text{where } L_T = D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T))$ 
-$L_t = D_\text{KL}(q(\mathbf{x}_t \vert \mathbf{x}_{t+1}, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_t \vert\mathbf{x}_{t+1})) \text{ for }1 \leq t \leq T-1$ 
-$L_0 = - \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)$
-Where $L_T$ is constant since $q$ has no trainable parameters and $\mathbf{x}_T$ equals Gaussian noise, and $L_0$ is modeled using a separate decoder that is derived from $\mathcal{N}(\mathbf{x}_0; \boldsymbol{\mu}_\theta(\mathbf{x}_1, 1), \boldsymbol{\Sigma}_\theta(\mathbf{x}_1, 1))$. The remaining KL terms in $L_{VLB}$ can be computed in closed form as an L2-loss with respect to the means as they compare two Gaussian distributions. Moreover, we have that the attractive property that, when conditioned on $\mathbf{x}_0$ the forward process posteriors in $L_{t-1}$ becomes tractable:
+$L\_\text{VLB} = L\_T + L\_{T-1} + \dots + L\_0  
+\text{where } L\_T = D\_\text{KL}(q(\mathbf{x}\_T \vert \mathbf{x}\_0) \parallel p\_\theta(\mathbf{x}\_T))$ 
+$L\_t = D\_\text{KL}(q(\mathbf{x}\_t \vert \mathbf{x}\_{t+1}, \mathbf{x}\_0) \parallel p\_\theta(\mathbf{x}\_t \vert\mathbf{x}\_{t+1})) \text{ for }1 \leq t \leq T-1$ 
+$L\_0 = - \log p\_\theta(\mathbf{x}\_0 \vert \mathbf{x}\_1)$
+Where $L\_T$ is constant since $q$ has no trainable parameters and $\mathbf{x}\_T$ equals Gaussian noise, and $L\_0$ is modeled using a separate decoder that is derived from $\mathcal{N}(\mathbf{x}\_0; \boldsymbol{\mu}\_\theta(\mathbf{x}\_1, 1), \boldsymbol{\Sigma}\_\theta(\mathbf{x}\_1, 1))$. The remaining KL terms in $L\_{VLB}$ can be computed in closed form as an L2-loss with respect to the means as they compare two Gaussian distributions. Moreover, we have that the attractive property that, when conditioned on $\mathbf{x}\_0$ the forward process posteriors in $L\_{t-1}$ becomes tractable:
 
-$q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right) =\mathcal{N}\left(\mathbf{x}_{t-1} ; \tilde{\boldsymbol{\mu}}_t\left(\mathbf{x}_t, \mathbf{x}_0\right), \tilde{\beta}_t \mathbf{I}\right) \\ \text { where } \quad \tilde{\boldsymbol{\mu}}_t\left(\mathbf{x}_t, \mathbf{x}_0\right)  :=\frac{\sqrt{\bar{\alpha}_{t-1}} \beta_t}{1-\bar{\alpha}_t} \mathbf{x}_0+\frac{\sqrt{\alpha_t}\left(1-\bar{\alpha}_{t-1}\right)}{1-\bar{\alpha}_t} \mathbf{x}_t \quad \text { and } \quad \tilde{\beta}_t:=\frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t} \beta_t$
+$q\left(\mathbf{x}\_{t-1} \mid \mathbf{x}\_t, \mathbf{x}\_0\right) =\mathcal{N}\left(\mathbf{x}\_{t-1} ; \tilde{\boldsymbol{\mu}}\_t\left(\mathbf{x}\_t, \mathbf{x}\_0\right), \tilde{\beta}\_t \mathbf{I}\right) \\ \text { where } \quad \tilde{\boldsymbol{\mu}}\_t\left(\mathbf{x}\_t, \mathbf{x}\_0\right)  :=\frac{\sqrt{\bar{\alpha}\_{t-1}} \beta\_t}{1-\bar{\alpha}\_t} \mathbf{x}\_0+\frac{\sqrt{\alpha\_t}\left(1-\bar{\alpha}\_{t-1}\right)}{1-\bar{\alpha}\_t} \mathbf{x}\_t \quad \text { and } \quad \tilde{\beta}\_t:=\frac{1-\bar{\alpha}\_{t-1}}{1-\bar{\alpha}\_t} \beta\_t$
 
-In literature, it is common that instead of predicting the mean using the neural network, to choose the parameterization in such a way that the model predicts the noise $\epsilon$ from $\mathbf{x}_t$. From an information theory perspective the both are equavalent, however for the model it is shown that predicting the noise instead of the mean in the reverse process leads to more accurate and robust modelling [4][1][5]. 
+In literature, it is common that instead of predicting the mean using the neural network, to choose the parameterization in such a way that the model predicts the noise $\epsilon$ from $\mathbf{x}\_t$. From an information theory perspective the both are equavalent, however for the model it is shown that predicting the noise instead of the mean in the reverse process leads to more accurate and robust modelling [4][1][5]. 
 For details on the complete derivation, we refer to[4].
 
 # Diffusion based representation learning
@@ -58,20 +58,20 @@ For details on the complete derivation, we refer to[4].
 [1]introduce a novel way to leverage diffusion models for representation learning. They build forward on the work of [4], where diffusion based methods using stochastic differential equations (SDE) on continuous time domains are discussed. The training of these models is dependent on score matching methods, of which denoising score matching [10]vand sliced score matching [9] are commonly used. The authors of the original paper enable representation learning by augmenting the denoising score matching framework without any supervised signal. While GANs and VAEs directly transform latent codes to data samples, diffusion-based representation learning relies on a new formulation of the denoising score matching objective, which encodes the information needed for denoising. This difference allows for manual control of the level of details encoded in the representation. The proposed approach involves learning an infinite-dimensional latent code that achieves improved performance on semi-supervised image classification compared to state-of-the-art models. Moreover, the authors compare the quality of the learned representations of diffusion score matching to other methods such as autoencoders and contrastively trained systems through their performances on downstream tasks. 
 
 The proposed alternative formulation of the Denoising Score Matching (DSM) formula is given by: 
-$J_t^{D S M}(\theta)= \mathbf{E}_{x_0}\left\{\mathbf{E}_{x_t \mid x_0}\left[\left\|\nabla_{x_t} \log p_{0 t}\left(x_t \mid x_0\right)-\nabla_{x_t} \log p_t\left(x_t\right)\right\|_2^2+\left\|s_\theta\left(x_t, t\right)-\nabla_{x_t} \log p_t\left(x_t\right)\right\|_2^2\right]\right\}$
+$J\_t^{D S M}(\theta)= \mathbf{E}\_{x\_0}\left\{\mathbf{E}\_{x\_t \mid x\_0}\left[\left\|\nabla\_{x\_t} \log p\_{0 t}\left(x\_t \mid x\_0\right)-\nabla\_{x\_t} \log p\_t\left(x\_t\right)\right\|\_2^2+\left\|s\_\theta\left(x\_t, t\right)-\nabla\_{x\_t} \log p\_t\left(x\_t\right)\right\|\_2^2\right]\right\}$
 The non-vanishing constant that has been added opposed to the original denoising function [10] is what enables the model for latent representation learning. The proposed learning objective for Diffusion-based Representation Learning (DRL) is given by: 
 
-$J^{D R L}(\theta, \phi)=\mathbf{E}_{t, x_0, x_t}\left[\lambda(t)\left\|s_\theta\left(x_t, t, E_\phi\left(x_0\right)\right)-\nabla_{x_t} \log p_{0 t}\left(x_t \mid x_0\right)\right\|_2^2\right]$
+$J^{D R L}(\theta, \phi)=\mathbf{E}\_{t, x\_0, x\_t}\left[\lambda(t)\left\|s\_\theta\left(x\_t, t, E\_\phi\left(x\_0\right)\right)-\nabla\_{x\_t} \log p\_{0 t}\left(x\_t \mid x\_0\right)\right\|\_2^2\right]$
 
-Where $E_\phi\left(x_0\right)$ is a trainable encoder that represents the labeling function. Intuitively, $E_\phi\left(x_0\right)$ chooses the direction in which the recovery of $x_0$ from $x_t$ is maximized. Moreover, the authors suggest that the encoder's purpose is to learn how to represent the essential information required to eliminate the noise in $x_0$, which varies depending on the noise level $\sigma(t)$. They claim that by modifying the weighting function $\lambda(t)$, the level of granularity in the encoded features can be manually controlled. Thus, they include the $E_\phi$ to obtain a low-dimensional representation to condition the generation of the diffusion model. The specified encoder $E_\phi$ is not enforced to be deterministic, intuitively it any function that can influence $I(x_t, x_0)$, the mutual information between $x_0$ and $x_t$ information channel, can be used. This naturally leads to a VAE-like encoder resulting in Variational Diffusion-based Representation Learning (VDRL). The VDRL objective function is given by:
+Where $E\_\phi\left(x\_0\right)$ is a trainable encoder that represents the labeling function. Intuitively, $E\_\phi\left(x\_0\right)$ chooses the direction in which the recovery of $x\_0$ from $x\_t$ is maximized. Moreover, the authors suggest that the encoder's purpose is to learn how to represent the essential information required to eliminate the noise in $x\_0$, which varies depending on the noise level $\sigma(t)$. They claim that by modifying the weighting function $\lambda(t)$, the level of granularity in the encoded features can be manually controlled. Thus, they include the $E\_\phi$ to obtain a low-dimensional representation to condition the generation of the diffusion model. The specified encoder $E\_\phi$ is not enforced to be deterministic, intuitively it any function that can influence $I(x\_t, x\_0)$, the mutual information between $x\_0$ and $x\_t$ information channel, can be used. This naturally leads to a VAE-like encoder resulting in Variational Diffusion-based Representation Learning (VDRL). The VDRL objective function is given by:
 
-$J^{V D R L}(\theta, \phi)=  \mathbf{E}_{t, x_0, x_t}\left[\mathbf{E}_{z \sim E_\phi\left(Z \mid x_0\right)}\left[\lambda(t)\left\|s_\theta\left(x_t, t, z\right)-\nabla_{x_t} \log p_{0 t}\left(x_t \mid x_0\right)\right\|_2^2\right]\right. \\  +\mathcal{D}_{\mathrm{KL}}\left(E_\phi\left(Z \mid x_0\right) \| \mathcal{N}(Z ; 0, I)\right]$
+$J^{V D R L}(\theta, \phi)=  \mathbf{E}\_{t, x\_0, x\_t}\left[\mathbf{E}\_{z \sim E\_\phi\left(Z \mid x\_0\right)}\left[\lambda(t)\left\|s\_\theta\left(x\_t, t, z\right)-\nabla\_{x\_t} \log p\_{0 t}\left(x\_t \mid x\_0\right)\right\|\_2^2\right]\right. \\  +\mathcal{D}\_{\mathrm{KL}}\left(E\_\phi\left(Z \mid x\_0\right) \| \mathcal{N}(Z ; 0, I)\right]$
 
-Additionaly, the authors introduce a variation of DRL that incorporates time-varying representations. In contrast to the previous approach, which used weighted training objectives to account for varying noise levels, this new method takes the time t as an input to the encoder.  $E_\phi(x_0)$ in Equation \ref{encodedDRL} is now replaced by  $E_\phi(x_0, t)$, leading to the following objective: 
+Additionaly, the authors introduce a variation of DRL that incorporates time-varying representations. In contrast to the previous approach, which used weighted training objectives to account for varying noise levels, this new method takes the time t as an input to the encoder.  $E\_\phi(x\_0)$ in Equation \ref{encodedDRL} is now replaced by  $E\_\phi(x\_0, t)$, leading to the following objective: 
 
-$\mathbf{E}_{t, x_0, x_t}\left[\lambda(t)\left\|s_\theta\left(x_t, t, E_\phi\left(x_0, t\right)\right)-\nabla_{x_t} \log p_{0 t}\left(x_t \mid x_0\right)\right\|_2^2\right]$
+$\mathbf{E}\_{t, x\_0, x\_t}\left[\lambda(t)\left\|s\_\theta\left(x\_t, t, E\_\phi\left(x\_0, t\right)\right)-\nabla\_{x\_t} \log p\_{0 t}\left(x\_t \mid x\_0\right)\right\|\_2^2\right]$
 
-Intuitively, this enables the encoder to extract the essential information of $x_0$ for denoising $x_t$ at any noise level. This approach allows for richer representation learning, which is not typically achievable with traditional auto-encoders or other static representation learning methods. Finally, the authors show that using adversarial training and choosing the right noise schedule improves the performance of score-based matching. 
+Intuitively, this enables the encoder to extract the essential information of $x\_0$ for denoising $x\_t$ at any noise level. This approach allows for richer representation learning, which is not typically achievable with traditional auto-encoders or other static representation learning methods. Finally, the authors show that using adversarial training and choosing the right noise schedule improves the performance of score-based matching. 
 
 # Review of the paper and steps moving forward
 
@@ -83,27 +83,27 @@ However, the paper does not place the significance in representation learning in
 
 ## Problem setting
 
-Let’s assume we have a true underlying data distribution $p_\text{data}(\mathbf{x})$, and a dataset $\mathcal{D}$ of i.i.d. samples from this distribution. Our goal is to learn a likelihood $p_\theta(\mathbf{x})$ from $\mathcal{D}$ that is very similar to $p_\text{data}(\mathbf{x})$, so that we can generate new data by sampling from it. \\
+Let’s assume we have a true underlying data distribution $p\_\text{data}(\mathbf{x})$, and a dataset $\mathcal{D}$ of i.i.d. samples from this distribution. Our goal is to learn a likelihood $p\_\theta(\mathbf{x})$ from $\mathcal{D}$ that is very similar to $p\_\text{data}(\mathbf{x})$, so that we can generate new data by sampling from it. \\
 
-One way to learn $p_\theta(\mathbf{x})$ is by computing the likelihood explicitly. In the context of unsupervised learning, we are also interested in learning the latent factors that explain our data. \\
+One way to learn $p\_\theta(\mathbf{x})$ is by computing the likelihood explicitly. In the context of unsupervised learning, we are also interested in learning the latent factors that explain our data. \\
 
-Latent variable models introduce the generative process $p_\theta(\mathbf{x,z}) = p_\theta(\mathbf{x|z})p_\theta(\mathbf{z})$, where
+Latent variable models introduce the generative process $p\_\theta(\mathbf{x,z}) = p\_\theta(\mathbf{x|z})p\_\theta(\mathbf{z})$, where
 \begin{itemize}
-    \item $p_\theta(\mathbf{z})$ is a \textit{prior distribution} over the latent variables, and
-    \item $p_\theta(\mathbf{x|z})$ is the \textit{conditional distribution}, parameterized by $\theta$.
+    \item $p\_\theta(\mathbf{z})$ is a \textit{prior distribution} over the latent variables, and
+    \item $p\_\theta(\mathbf{x|z})$ is the \textit{conditional distribution}, parameterized by $\theta$.
 \end{itemize}
 
 Since only $\mathbf{x}$ is accessible during training, we marginalize out the latent variables $\mathbf{z}$ to obtain the likelihood of the data:
 
-$p_\theta(\mathbf{x}) = \int_\mathbf{z} p_\theta(\mathbf{z})p_\theta(\mathbf{x|z})d\mathbf{z}$
+$p\_\theta(\mathbf{x}) = \int\_\mathbf{z} p\_\theta(\mathbf{z})p\_\theta(\mathbf{x|z})d\mathbf{z}$
 
 During inference, we are interested in learning the *posterior distribution*
 
-$p_\theta(\mathbf{z|x}) = p_\theta(\mathbf{x|z})p_\theta(\mathbf{z})/p_\theta(\mathbf{x})$
+$p\_\theta(\mathbf{z|x}) = p\_\theta(\mathbf{x|z})p\_\theta(\mathbf{z})/p\_\theta(\mathbf{x})$
 
 We follow a maximum-likelihood-based approach, where the objective is to find the optimal parameters $\theta$ according to:
 
-$\underset{\theta}{\mathrm{max}} \text{ }\mathbb{E}_{p_\text{data}(\mathbf{x})}[\log p_\theta(\mathbf{x})]$,
+$\underset{\theta}{\mathrm{max}} \text{ }\mathbb{E}\_{p\_\text{data}(\mathbf{x})}[\log p\_\theta(\mathbf{x})]$,
 
 where the expectation is approximated using a sample average over $\mathcal{D}$.
 
@@ -111,106 +111,106 @@ However, since the integral over $\mathbf{z}$ is very commonly intractable, a co
 
 # Variational AutoEncoder
 
-We use a VAE [6] to approximate the intractable posterior $p_\theta(\mathbf{z}|\mathbf{x})$ via a tractable \textit{variational posterior} $q_\phi(\mathbf{z|x})$. 
+We use a VAE [6] to approximate the intractable posterior $p\_\theta(\mathbf{z}|\mathbf{x})$ via a tractable \textit{variational posterior} $q\_\phi(\mathbf{z|x})$. 
 
 We make the following assumptions:
-* The prior over the latent variables is the standard multivariate Gaussian $p_\theta(\mathbf{z}) = \mathcal{N}(\mathbf{0,I})$.
-* The variational posterior is a Gaussian distribution $q_\phi(\mathbf{z|x}) = \mathcal{N}(\bm{\mu}_\phi(\mathbf{x}), \bm{\sigma}_\phi^2(\mathbf{x})\mathbf{I})$, and $\bm{\mu}_\phi(\mathbf{x}), \bm{\sigma}_\phi^2$ are the outputs of a neural network encoder $E_\phi$.
- * The conditional distribution $p_\theta(\mathbf{x|z})$ is parameterized by a Variational Diffusion Model $D_\theta$ conditioned on the latent variables $\mathbf{z}$.
+* The prior over the latent variables is the standard multivariate Gaussian $p\_\theta(\mathbf{z}) = \mathcal{N}(\mathbf{0,I})$.
+* The variational posterior is a Gaussian distribution $q\_\phi(\mathbf{z|x}) = \mathcal{N}(\bm{\mu}\_\phi(\mathbf{x}), \bm{\sigma}\_\phi^2(\mathbf{x})\mathbf{I})$, and $\bm{\mu}\_\phi(\mathbf{x}), \bm{\sigma}\_\phi^2$ are the outputs of a neural network encoder $E\_\phi$.
+ * The conditional distribution $p\_\theta(\mathbf{x|z})$ is parameterized by a Variational Diffusion Model $D\_\theta$ conditioned on the latent variables $\mathbf{z}$.
 
 We are able to jointly optimize network parameters $\phi$ and $\theta$ by maximizing the variational lower bound (VLB) on the (marginal) log-likelihood:
 
-$\log p_\theta(\mathbf{x}) \geq \mathbb{E}_{\mathbf{z} \sim q_\phi(\mathbf{z|x})} \left[\log p_\theta(\mathbf{x|z})\right] - D_\text{KL}(q_\phi(\mathbf{z|x}) || p(\mathbf{z})) 
+$\log p\_\theta(\mathbf{x}) \geq \mathbb{E}\_{\mathbf{z} \sim q\_\phi(\mathbf{z|x})} \left[\log p\_\theta(\mathbf{x|z})\right] - D\_\text{KL}(q\_\phi(\mathbf{z|x}) || p(\mathbf{z})) 
     = -\mathcal{L}(\theta, \phi; \mathbf{x})$
     
 For details on the derivation, see \hyperref[sec:A]{Appendix A}.
 
 ## Variational Diffusion Model
 
-We employ a VDM [5] for the task of modeling the conditional distribution $p_\theta(\mathbf{x|z})$.
+We employ a VDM [5] for the task of modeling the conditional distribution $p\_\theta(\mathbf{x|z})$.
 
 ## Forward process
 
-Consider a *variance-preserving* Gaussian diffusion process that defines a sequence of increasingly noise versions of $\mathbf{x}$ represented by the latent variables $\tilde{\mathbf{z}}_t$, where $t=0$ is the least noisy version and $t=1$ is the noisiest version.
+Consider a *variance-preserving* Gaussian diffusion process that defines a sequence of increasingly noise versions of $\mathbf{x}$ represented by the latent variables $\tilde{\mathbf{z}}\_t$, where $t=0$ is the least noisy version and $t=1$ is the noisiest version.
 
-The distribution of latent variables $\tilde{\mathbf{z}}_t$ conditioned on $\mathbf{x}$ for $t \in [0,1]$ is given by:
-$q(\tilde{\mathbf{z}}_t|\mathbf{x}) = \mathcal{N}(\alpha_t\mathbf{x},\sigma_t^2\mathbf{I})$, with $\alpha_t = \sqrt{1 - \sigma_t^2}$ and $q(\tilde{\mathbf{z}}_1|\mathbf{x}) = \mathcal{N}(\mathbf{0,I})$. We make the simplifying assumption that the noise schedule $\sigma_t^2$ for $t \in [0,1]$ follows a fixed form. 
+The distribution of latent variables $\tilde{\mathbf{z}}\_t$ conditioned on $\mathbf{x}$ for $t \in [0,1]$ is given by:
+$q(\tilde{\mathbf{z}}\_t|\mathbf{x}) = \mathcal{N}(\alpha\_t\mathbf{x},\sigma\_t^2\mathbf{I})$, with $\alpha\_t = \sqrt{1 - \sigma\_t^2}$ and $q(\tilde{\mathbf{z}}\_1|\mathbf{x}) = \mathcal{N}(\mathbf{0,I})$. We make the simplifying assumption that the noise schedule $\sigma\_t^2$ for $t \in [0,1]$ follows a fixed form. 
 
-The distributions $q(\tilde{\mathbf{z}}_t|\tilde{\mathbf{z}}_s)$, for $t > s$ are also Gaussian. Given this setting, we can verify through Bayes rule that $q(\tilde{\mathbf{z}}_s|\tilde{\mathbf{z}}_t, \mathbf{x})$ is also Gaussian. The shape of these distributions is given in \hyperref[sec:B]{Appendix B}.
+The distributions $q(\tilde{\mathbf{z}}\_t|\tilde{\mathbf{z}}\_s)$, for $t > s$ are also Gaussian. Given this setting, we can verify through Bayes rule that $q(\tilde{\mathbf{z}}\_s|\tilde{\mathbf{z}}\_t, \mathbf{x})$ is also Gaussian. The shape of these distributions is given in \hyperref[sec:B]{Appendix B}.
 
 ## Reverse process
 
 A hierarchical generative model is defined by inverting the diffusion process defined above and conditioning on $\mathbf{z}$. For a finite $T$, we consider $T$ timesteps of width $\tau = 1/T$. We define $s(i) = (i-1)/T$ and $t(i)=i/T$, such that our (conditional) hierarchical generative model is given by:
 
-$p_\theta(\mathbf{x|z}) = \int_{\tilde{\mathbf{z}}} p(\tilde{\mathbf{z}}_1)p_\theta(\mathbf{x}|\tilde{\mathbf{z}}_0,\mathbf{z})\prod_{i=1}^T p_\theta(\tilde{\mathbf{z}}_{s(i)}|\tilde{\mathbf{z}}_{t(i)},\mathbf{z})$.
+$p\_\theta(\mathbf{x|z}) = \int\_{\tilde{\mathbf{z}}} p(\tilde{\mathbf{z}}\_1)p\_\theta(\mathbf{x}|\tilde{\mathbf{z}}\_0,\mathbf{z})\prod\_{i=1}^T p\_\theta(\tilde{\mathbf{z}}\_{s(i)}|\tilde{\mathbf{z}}\_{t(i)},\mathbf{z})$.
 
-With the variance-preserving diffusion process, we have $p(\tilde{\mathbf{z}}_1) = \mathcal{N}(\mathbf{0,I})$. \red{Missing how to define $p_\theta(\mathbf{x}|\tilde{\mathbf{z}}_0,\mathbf{z})$}. \\
+With the variance-preserving diffusion process, we have $p(\tilde{\mathbf{z}}\_1) = \mathcal{N}(\mathbf{0,I})$. \red{Missing how to define $p\_\theta(\mathbf{x}|\tilde{\mathbf{z}}\_0,\mathbf{z})$}. \\
 
 The conditional model distributions are given by:
-$p_\theta(\tilde{\mathbf{z}}_{s}|\tilde{\mathbf{z}}_{t},\mathbf{z}) = q(\tilde{\mathbf{z}}_{s}|\tilde{\mathbf{z}}_{t}, \mathbf{x} = \hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t))$,
-i.e. the same as $q(\tilde{\mathbf{z}}_{s}|\tilde{\mathbf{z}}_{t}, \mathbf{x})$, but with the original $\mathbf{x}$ replaced by the output of a (conditional) *denoising model* $\hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t)$. 
+$p\_\theta(\tilde{\mathbf{z}}\_{s}|\tilde{\mathbf{z}}\_{t},\mathbf{z}) = q(\tilde{\mathbf{z}}\_{s}|\tilde{\mathbf{z}}\_{t}, \mathbf{x} = \hat{\mathbf{x}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t))$,
+i.e. the same as $q(\tilde{\mathbf{z}}\_{s}|\tilde{\mathbf{z}}\_{t}, \mathbf{x})$, but with the original $\mathbf{x}$ replaced by the output of a (conditional) *denoising model* $\hat{\mathbf{x}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t)$. 
 
-In practice, we parameterize the conditional denoising model in terms of a conditional *noise prediction model* $\hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t)$ as follows:
+In practice, we parameterize the conditional denoising model in terms of a conditional *noise prediction model* $\hat{\bm{\epsilon}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t)$ as follows:
 
-$\hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t) = (\tilde{\mathbf{z}}_{t} - \sigma_t\hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t))/\alpha_t$,
+$\hat{\mathbf{x}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t) = (\tilde{\mathbf{z}}\_{t} - \sigma\_t\hat{\bm{\epsilon}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t))/\alpha\_t$,
 
-with $\hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t)$ parameterized by a neural network.
+with $\hat{\bm{\epsilon}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t)$ parameterized by a neural network.
 
 ### Variational lower bound
 
 We can optimize the parameters $\theta$ by maximizing the variational lower bound of the conditional distribution, given by:
-$\log p_\theta(\mathbf{x|z}) \geq -\mathcal{L}_0(\theta;\mathbf{x,z}) - \mathcal{L}_1(\mathbf{x},\tilde{\mathbf{z}}_1) - \mathcal{L}_t(\theta;\mathbf{x,z}) 
-    = -\mathcal{L}_\text{VAE}(\theta;\mathbf{x,z})$ 
+$\log p\_\theta(\mathbf{x|z}) \geq -\mathcal{L}\_0(\theta;\mathbf{x,z}) - \mathcal{L}\_1(\mathbf{x},\tilde{\mathbf{z}}\_1) - \mathcal{L}\_t(\theta;\mathbf{x,z}) 
+    = -\mathcal{L}\_\text{VAE}(\theta;\mathbf{x,z})$ 
     where:
-     $\mathcal{L}_0(\theta;\mathbf{x,z})$ is the reconstruction loss
-$\mathcal{L}_0(\theta;\mathbf{x,z}) = \mathbb{E}_{q(\tilde{\mathbf{z}}_{0}|\mathbf{x})}[-\log p_\theta(\mathbf{x}|\tilde{\mathbf{z}}_0,\mathbf{z})]$ ,  $\mathcal{L}_1(\mathbf{x},\tilde{\mathbf{z}}_1)$ is the prior loss
- $\mathcal{L}_1(\mathbf{x},\tilde{\mathbf{z}}_1) = D_\text{KL}[q(\tilde{\mathbf{z}}_1|\mathbf{x})||p(\tilde{\mathbf{z}}_1)],$
- which due to our assumptions remains constant and is ignored during training, and $\mathcal{L}_t(\theta;\mathbf{x,z})$ is the diffusion loss
- $\mathcal{L}_t(\theta;\mathbf{x,z}) = \sum_{i=1}^T \mathbb{E}_{q(\tilde{\mathbf{z}}_{t(i)}|\mathbf{x})}D_\text{KL}[q(\tilde{\mathbf{z}}_{s(i)}|\tilde{\mathbf{z}}_{t(i)}, \mathbf{x})||p_\theta(\tilde{\mathbf{z}}_{s(i)}|\tilde{\mathbf{z}}_{t(i)},\mathbf{z})]$.
+     $\mathcal{L}\_0(\theta;\mathbf{x,z})$ is the reconstruction loss
+$\mathcal{L}\_0(\theta;\mathbf{x,z}) = \mathbb{E}\_{q(\tilde{\mathbf{z}}\_{0}|\mathbf{x})}[-\log p\_\theta(\mathbf{x}|\tilde{\mathbf{z}}\_0,\mathbf{z})]$ ,  $\mathcal{L}\_1(\mathbf{x},\tilde{\mathbf{z}}\_1)$ is the prior loss
+ $\mathcal{L}\_1(\mathbf{x},\tilde{\mathbf{z}}\_1) = D\_\text{KL}[q(\tilde{\mathbf{z}}\_1|\mathbf{x})||p(\tilde{\mathbf{z}}\_1)],$
+ which due to our assumptions remains constant and is ignored during training, and $\mathcal{L}\_t(\theta;\mathbf{x,z})$ is the diffusion loss
+ $\mathcal{L}\_t(\theta;\mathbf{x,z}) = \sum\_{i=1}^T \mathbb{E}\_{q(\tilde{\mathbf{z}}\_{t(i)}|\mathbf{x})}D\_\text{KL}[q(\tilde{\mathbf{z}}\_{s(i)}|\tilde{\mathbf{z}}\_{t(i)}, \mathbf{x})||p\_\theta(\tilde{\mathbf{z}}\_{s(i)}|\tilde{\mathbf{z}}\_{t(i)},\mathbf{z})]$.
  
  For details on the derivation, see Appendix C.
 
  The reconstruction loss can be estimated using standard techniques. The diffusion loss is estimated through:
  
- $\mathcal{L}_t^D(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} \left[ \left(\text{SNR}(s(i)) - \text{SNR}(t(i))\right)||\mathbf{x} - \hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t(i))||_2^2 \right]$,
+ $\mathcal{L}\_t^D(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}\_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} \left[ \left(\text{SNR}(s(i)) - \text{SNR}(t(i))\right)||\mathbf{x} - \hat{\mathbf{x}}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t(i))||\_2^2 \right]$,
  
-where $\mathcal{U}\{1,T\}$ is the discrete uniform distribution between 1 and $T$ and $\text{SNR}(t) = \alpha_t^2/\sigma_t^2$ is the signal-to-noise ratio at timestep $t$. 
+where $\mathcal{U}\{1,T\}$ is the discrete uniform distribution between 1 and $T$ and $\text{SNR}(t) = \alpha\_t^2/\sigma\_t^2$ is the signal-to-noise ratio at timestep $t$. 
 
-In the case of a noise prediction model $\hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t)$, the estimator becomes:
+In the case of a noise prediction model $\hat{\bm{\epsilon}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t)$, the estimator becomes:
 
-$\mathcal{L}_t^N(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} [(\text{SNR}(s(i))-\text{SNR}(t(i)))||\bm{\epsilon} - \hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t(i))||_2^2].$
+$\mathcal{L}\_t^N(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}\_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} [(\text{SNR}(s(i))-\text{SNR}(t(i)))||\bm{\epsilon} - \hat{\bm{\epsilon}}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t(i))||\_2^2].$
 
  The complete simplification is described in \hyperref[sec:D]{Appendix D}.
 
 ### Connection to score-based modeling
 
- Consider the marginal distribution of $\tilde{\mathbf{z}}_t$:
+ Consider the marginal distribution of $\tilde{\mathbf{z}}\_t$:
  
- $q(\tilde{\mathbf{z}}_t) = \int q(\tilde{\mathbf{z}}_t|\mathbf{x})p_{data}(\mathbf{x})d\mathbf{x}$
+ $q(\tilde{\mathbf{z}}\_t) = \int q(\tilde{\mathbf{z}}\_t|\mathbf{x})p\_{data}(\mathbf{x})d\mathbf{x}$
  
- Explicit score matching (ESM) [3] attempts to learn a score model $\mathbf{s}_\theta(\tilde{\mathbf{z}}_t;t) \approx \nabla_{\tilde{\mathbf{z}}_t} \log q(\tilde{\mathbf{z}}_t)$, which allows sampling from $q(\tilde{\mathbf{z}}_t)$ using Langevin dynamics. 
+ Explicit score matching (ESM) [3] attempts to learn a score model $\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_t;t) \approx \nabla\_{\tilde{\mathbf{z}}\_t} \log q(\tilde{\mathbf{z}}\_t)$, which allows sampling from $q(\tilde{\mathbf{z}}\_t)$ using Langevin dynamics. 
  
-[10] proves that optimizing the denoising score matching (DSM) objective yields *consistent* score models $\mathbf{s}_\theta(\tilde{\mathbf{z}}_t;t) \approx \nabla_{\tilde{\mathbf{z}}_t} \log q(\tilde{\mathbf{z}}_t|\mathbf{x})$, in the sense that with infinite data, they are equivalently optimizing the ESM objective. 
+[10] proves that optimizing the denoising score matching (DSM) objective yields *consistent* score models $\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_t;t) \approx \nabla\_{\tilde{\mathbf{z}}\_t} \log q(\tilde{\mathbf{z}}\_t|\mathbf{x})$, in the sense that with infinite data, they are equivalently optimizing the ESM objective. 
 
-[4] shows that a certain parameterization of diffusion models reveals an equivalence with DSM over multiple noise levels during training, which implies consistency. Moreover, [5] generalizes the original consistency proof of DSM to show that, with infinite data, the optimal score model $\mathbf{s}_\theta^*(\tilde{\mathbf{z}}_t;t)$ for the derived VLB estimators is such that:
+[4] shows that a certain parameterization of diffusion models reveals an equivalence with DSM over multiple noise levels during training, which implies consistency. Moreover, [5] generalizes the original consistency proof of DSM to show that, with infinite data, the optimal score model $\mathbf{s}\_\theta^*(\tilde{\mathbf{z}}\_t;t)$ for the derived VLB estimators is such that:
  
- $\mathbf{s}_\theta^*(\tilde{\mathbf{z}}_t;t) = \nabla_{\tilde{\mathbf{z}}_t}\log q(\tilde{\mathbf{z}}_t)$
+ $\mathbf{s}\_\theta^*(\tilde{\mathbf{z}}\_t;t) = \nabla\_{\tilde{\mathbf{z}}\_t}\log q(\tilde{\mathbf{z}}\_t)$
 
- It is possible to parameterize the conditional denoising model described in Section 2.3.2 in terms of a conditional score model $\mathbf{s}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t)$ as follows:
- \[\hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t) = (\sigma_t^2\mathbf{s}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t) + \tilde{\mathbf{z}}_{t})/\alpha_t.\]
+ It is possible to parameterize the conditional denoising model described in Section 2.3.2 in terms of a conditional score model $\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t)$ as follows:
+ \[\hat{\mathbf{x}}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t) = (\sigma\_t^2\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_{t}, \mathbf{z};t) + \tilde{\mathbf{z}}\_{t})/\alpha\_t.\]
  
  The diffusion loss estimator becomes:
 
- $\mathcal{L}_t^S(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}}
-     \quad[||\sqrt{c\left(t(i)\right)} \left( \nabla_{\tilde{\mathbf{z}}_{t(i)}} \log q(\tilde{\mathbf{z}}_{t(i)}|\mathbf{x})-\mathbf{s}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t)\right)||_2^2]$,
+ $\mathcal{L}\_t^S(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}\_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}}
+     \quad[||\sqrt{c\left(t(i)\right)} \left( \nabla\_{\tilde{\mathbf{z}}\_{t(i)}} \log q(\tilde{\mathbf{z}}\_{t(i)}|\mathbf{x})-\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t)\right)||\_2^2]$,
  where $\sqrt{c\left(t(i)\right)}$ is a time-dependent weighting factor. 
 
- [1] claims that $\mathcal{L}_t^S(\theta;\mathbf{x,z})$ is a valid representation learning objective. The score $\nabla_{\tilde{\mathbf{z}}_t} \log q(\tilde{\mathbf{z}}_t|\mathbf{x})$ is a function of only $t$, $\tilde{\mathbf{z}}_t$, and $\mathbf{x}$. Thus, when $\mathbf{z}$ contains all information about $\mathbf{x}$, it is possible to learn 
- $\mathbf{s}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t) \approx \nabla_{\tilde{\mathbf{z}}_t}\log q(\tilde{\mathbf{z}}_t) = \mathbf{s}_\theta^*(\tilde{\mathbf{z}}_t;t)$.
+ [1] claims that $\mathcal{L}\_t^S(\theta;\mathbf{x,z})$ is a valid representation learning objective. The score $\nabla\_{\tilde{\mathbf{z}}\_t} \log q(\tilde{\mathbf{z}}\_t|\mathbf{x})$ is a function of only $t$, $\tilde{\mathbf{z}}\_t$, and $\mathbf{x}$. Thus, when $\mathbf{z}$ contains all information about $\mathbf{x}$, it is possible to learn 
+ $\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t) \approx \nabla\_{\tilde{\mathbf{z}}\_t}\log q(\tilde{\mathbf{z}}\_t) = \mathbf{s}\_\theta^*(\tilde{\mathbf{z}}\_t;t)$.
  When $\mathbf{z}$ has no mutual information with $\mathbf{x}$, it is only possible to learn
- $\mathbf{s}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t) \approx \nabla_{\tilde{\mathbf{z}}_t} \log q(\tilde{\mathbf{z}}_t|\mathbf{x})$,
+ $\mathbf{s}\_\theta(\tilde{\mathbf{z}}\_{t(i)}, \mathbf{z};t) \approx \nabla\_{\tilde{\mathbf{z}}\_t} \log q(\tilde{\mathbf{z}}\_t|\mathbf{x})$,
  which minimizes the DSM objective only up to a constant 
- $||\nabla_{\tilde{\mathbf{z}}_t} \log q(\tilde{\mathbf{z}}_t|\mathbf{x}) - \nabla_{\tilde{\mathbf{z}}_t}\log q(\tilde{\mathbf{z}}_t)||_2^2$.
+ $||\nabla\_{\tilde{\mathbf{z}}\_t} \log q(\tilde{\mathbf{z}}\_t|\mathbf{x}) - \nabla\_{\tilde{\mathbf{z}}\_t}\log q(\tilde{\mathbf{z}}\_t)||\_2^2$.
  Complete details of the connection to score-based modeling are included in \hyperref[sec:E]{Appendix E}.
 
 # Experiments
@@ -236,7 +236,7 @@ The VDM networks are scaled using the number of Resnet+Attention blocks in the U
 |-----------------------|-------------|----------------------|--------------------|--------------------|
 | Block output channels | 64          | 64                   | 32                 | 16                 |
 | Layers per block      | 2           | 2                    | 1                  | 1                  |
-| norm_num_groups       | 32          | 32                   | 16                 | 8                  |
+| norm\_num\_groups       | 32          | 32                   | 16                 | 8                  |
 | Latent encoding size  | 256         | 128                  | 128                | 128                |
 | Parameter count       | ?           | 515,521              | 261,793            | 216,529            |
 
@@ -246,8 +246,8 @@ The VDM networks are scaled using the number of Resnet+Attention blocks in the U
 
 |                   | Original VDM (OVDM) | Small VDM (SVDM) | Tiny VDM (TVDM) | Micro VDM (MVDM) |
 |-------------------|---------------------|------------------|-----------------|------------------|
-| n_blocks          | 32                  | 16               | 8               | 4                |
-| embedding_dim     | 128                 | 64               | 32              | 16               |
+| n\_blocks          | 32                  | 16               | 8               | 4                |
+| embedding\_dim     | 128                 | 64               | 32              | 16               |
 | Parameter count   | 31,656,961          | 4,323,841        | 637,441         | ?                |
 
 ## Setup 
@@ -260,9 +260,9 @@ We trained each combination of VDM and decoder for 100000 steps on the MNIST dat
 
 
 ![MI](plots/mi.png) ![BPD](plots/bpd.png)  
-![Encoder Loss](plots/encoder_loss.png) ![FID](plots/fid.png)
+![Encoder Loss](plots/encoder\_loss.png) ![FID](plots/fid.png)
 
-| Experiment | bpd   | diff_loss | encoder_loss | mi         | fid     |
+| Experiment | bpd   | diff\_loss | encoder\_loss | mi         | fid     |
 |------------|-------|-----------|--------------|------------|---------|
 | exp15      | 1.748 | 1.736     | 0.001        | 0.020      | 217.533 |
 | exp4       | 1.564 | 1.553     | -            | -          | 187.118 |
