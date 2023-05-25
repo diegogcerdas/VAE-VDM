@@ -171,12 +171,10 @@ $\mathcal{L}_0(\theta;\mathbf{x,z}) = \mathbb{E}_{q(\tilde{\mathbf{z}}_{0}|\math
  For details on the derivation, see Appendix C.
 
  The reconstruction loss can be estimated using standard techniques. The diffusion loss is estimated through:
- \begin{align*}
-     &\mathcal{L}_t^D(\theta;\mathbf{x,z}) \\
-     &\quad = \frac{T}{2}\mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} \\
-     &\quad\left[ \left(\text{SNR}(s(i)) - \text{SNR}(t(i))\right)||\mathbf{x} - \hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t(i))||_2^2 \right],
- \end{align*}
-where $\mathcal{U}\{1,T\}$ is the discrete uniform distribution between 1 and $T$ and $\text{SNR}(t) = \alpha_t^2/\sigma_t^2$ is the signal-to-noise ratio at timestep $t$. \\
+ 
+ $\mathcal{L}_t^D(\theta;\mathbf{x,z}) = \frac{T}{2}\mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}(\mathbf{0,I}), i \sim \mathcal{U}\{1,T\}} \left[ \left(\text{SNR}(s(i)) - \text{SNR}(t(i))\right)||\mathbf{x} - \hat{\mathbf{x}}_\theta(\tilde{\mathbf{z}}_{t(i)}, \mathbf{z};t(i))||_2^2 \right]$,
+ 
+where $\mathcal{U}\{1,T\}$ is the discrete uniform distribution between 1 and $T$ and $\text{SNR}(t) = \alpha_t^2/\sigma_t^2$ is the signal-to-noise ratio at timestep $t$. 
 
 In the case of a noise prediction model $\hat{\bm{\epsilon}}_\theta(\tilde{\mathbf{z}}_{t}, \mathbf{z};t)$, the estimator becomes:
 
