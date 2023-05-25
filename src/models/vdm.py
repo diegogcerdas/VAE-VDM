@@ -57,6 +57,23 @@ class VDM(nn.Module):
         scale = sigma_s * sqrt(c)
         return mean + scale * torch.randn_like(z)
 
+    def sample_same_z(self, batch_size, n_sample_steps, clip_samples):
+        z = torch.randn(*self.image_shape).unsqueeze(0).repeat(batch_size, 1, 1, 1)
+
+        # sample w (encoder)
+        w = (
+            torch.randn((batch_size, self.cfg.w_dim), device=self.device)
+            if self.cfg.use_encoder
+            else None
+        )
+
+        steps = linspace(1.0, 0.0, n_sample_steps + 1, device=self.device)
+        for i in trange(n_sample_steps, desc="sampling"):
+            z = self.sample_p_s_t(z, steps[i], steps[i + 1], clip_samples, w=w)
+        logprobs = self.log_probs_x_z0(z_0=z)  # (B, C, H, W, vocab_size)
+        x = argmax(logprobs, dim=-1)  # (B, C, H, W)
+        return x.float() / (self.vocab_size - 1)  # normalize to [0, 1]
+
     @torch.no_grad()
     def sample(self, batch_size, n_sample_steps, clip_samples):
         z = torch.randn((batch_size, *self.image_shape), device=self.device)

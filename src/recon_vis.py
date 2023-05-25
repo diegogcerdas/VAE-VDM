@@ -84,6 +84,7 @@ def vis_reconstruct_grid(data_loader, model, grid_size=10, noise_level=0.7):
     final_plot.show()
 
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=128)
@@ -119,7 +120,15 @@ def main():
     encoder = Encoder(shape, cfg) if cfg.use_encoder else None
     diffusion = VDM(model, cfg, image_shape=shape, encoder=encoder)
     load_checkpoint(diffusion, "model.pt", device)
-    vis_reconstruct_grid(validation_set, diffusion)
+    samples = diffusion.sample_same_z(5, 3, 1)
+    for s in samples:
+        s = s.permute(1, 2, 0).cpu().detach().numpy()
+        plt.imshow(s)
+        plt.show()
+
+
+
+    #vis_reconstruct_grid(validation_set, diffusion)
 
     # for i in range(10):
     #     image = validation_set[i][0].unsqueeze(0)
