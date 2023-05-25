@@ -17,6 +17,8 @@ import yaml
 from collections import defaultdict
 from diffusers.models.vae import DiagonalGaussianDistribution
 from torchmetrics.image.fid import FrechetInceptionDistance
+from models.encoder import Encoder
+from utils.visualization import reconstruct_batched, visualize_reconstruction, visualize_sampling, get_tsne, get_pca, visualize_latent_manifold
 
 
 class Evaluator:
@@ -76,16 +78,30 @@ class Evaluator:
         log(f"Loading checkpoint '{self.checkpoint_file}'")
         self.diffusion_model.load_state_dict(data["model"])
         self.ema.load_state_dict(data["ema"])
+        self.ckpt_step = data["step"]
 
     @torch.no_grad()
-    def eval(self):
-        self.eval_model(self.diffusion_model, is_ema=False)
-        self.eval_model(self.ema.ema_model, is_ema=True)
+    def eval(self, cover_train_set=False):
+        self.eval_model(self.diffusion_model, is_ema=False, cover_train_set=cover_train_set)
+        self.eval_model(self.ema.ema_model, is_ema=True, cover_train_set=cover_train_set)
 
-    def eval_model(self, model, *, is_ema):
+    def eval_model(self, model, *, is_ema, cover_train_set=False):
         log(f"\n *** Evaluating {'EMA' if is_ema else 'online'} model\n")
         self.sample_images(model, is_ema=is_ema)
-        for validation in [True, False]:
+        self.reconstruct_images(model, 0.4, 10, 250, 10, is_ema=is_ema)
+        self.reconstruct_images(model, 0.6, 10, 250, 10, is_ema=is_ema)
+        self.reconstruct_images(model, 0.8, 10, 250, 10, is_ema=is_ema)
+        self.compute_latent_manifold('tsne', model.encoder, is_trained_encoder=True, is_ema=is_ema)
+        self.compute_latent_manifold('pca', model.encoder, is_trained_encoder=True, is_ema=is_ema)
+        random_encoder = model.encoder.clone_with_random_weights()
+        self.compute_latent_manifold('tsne', random_encoder, is_trained_encoder=False, is_ema=is_ema)
+        self.compute_latent_manifold('pca', random_encoder, is_trained_encoder=False, is_ema=is_ema)
+
+        val = [True]
+        if cover_train_set:
+            val.append(False)
+
+        for validation in val:
             evaluate_model_and_log(
                 model,
                 self.validation_dataloader
@@ -105,8 +121,29 @@ class Evaluator:
             self.n_sample_steps,
             self.clip_samples,
         )
-        path = self.eval_path / f"sample{'-ema' if is_ema else ''}.png"
-        save_image(samples, str(path), nrow=int(math.sqrt(self.num_samples)))
+        visualize_sampling(samples, self.eval_path, is_ema, self.ckpt_step)
+
+    def reconstruct_images(self, model, noise_level, n_samples, n_recon_steps, n_recon_steps_retrieve, is_ema):
+        orig, recon = reconstruct_batched(
+            model,
+            self.validation_dataloader,
+            noise_level,
+            n_samples,
+            n_recon_steps,
+            n_recon_steps_retrieve,
+            self.device,
+            self.clip_samples,
+        )
+        visualize_reconstruction(orig, recon, self.eval_path, noise_level, is_ema, self.ckpt_step)
+
+    def compute_latent_manifold(self, method, encoder, is_trained_encoder, is_ema, n_points=10_000):
+        if method == 'tsne':
+            emb, lab = get_tsne(encoder, self.validation_dataloader, self.device, n_points)
+        elif method == 'pca':
+            emb, lab = get_pca(encoder, self.validation_dataloader, self.device, n_points)
+        else:
+            raise NotImplementedError(f'Unknown method {method}')
+        visualize_latent_manifold(emb, lab, self.eval_path, method, is_trained_encoder, is_ema, self.ckpt_step)
 
 
 def evaluate_model(model, dataloader):

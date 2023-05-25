@@ -8,6 +8,8 @@ from diffusers.models.vae import Encoder as E
 class Encoder(nn.Module):
     def __init__(self, image_shape, cfg):
         super().__init__()
+        self._image_shape = image_shape
+        self._cfg = cfg
         in_channels, h, w = image_shape
         self.model = E(
             in_channels=in_channels,
@@ -25,6 +27,9 @@ class Encoder(nn.Module):
         x = self.flatten(x)
         x = self.linear(x)
         return x
+    
+    def clone_with_random_weights(self):
+        return Encoder(self._image_shape, self._cfg)
 
 
 class EncoderTime(nn.Module):

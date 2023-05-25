@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument("--num-sample-steps", type=int, default=250)
     parser.add_argument("--clip-samples", action=BooleanOptionalAction, default=True)
     parser.add_argument("--n-samples-for-eval", type=int, default=1)
+    parser.add_argument("--cover-train-set", action=BooleanOptionalAction, default=False)
     args = parser.parse_args()
     return args
 
@@ -48,6 +49,7 @@ def main():
     args = parse_args()
     set_seed(args.seed)
     cfg = load_config_from_yaml(Config, args)
+    cfg.eval_batch_size = args.batch_size
 
     train_set, validation_set, shape = get_datasets(cfg, args)
 
@@ -63,7 +65,7 @@ def main():
         train_set,
         validation_set,
         config=cfg,
-    ).eval()
+    ).eval(args.cover_train_set)
 
 
 if __name__ == "__main__":
