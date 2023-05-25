@@ -3,6 +3,9 @@ import numpy as np
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import torch
+import os
+import json
+import pandas as pd
 
 from models.encoder import Encoder
 
@@ -206,3 +209,38 @@ def visualize_reconstruction(original, reconstructed, save_path, noise_level, is
 def visualize_sampling(samples, save_path, is_ema, step):
     path = save_path / f"sample-{'ema-' if is_ema else ''}{step}.png"
     save_image(samples, str(path), nrow=int(math.sqrt(samples.shape[0])))
+
+def parse_metrics_to_csv(results_path):
+    filename = os.path.join(results_path, 'metrics_log.jsonl')
+    assert os.path.exists(filename), f'File {filename} does not exist.'
+    metrics = {}
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            mydict = json.loads(l)
+            step = mydict['step']
+            stage = mydict['set']
+            metrics.setdefault(step, {})
+            for key, val in mydict.items():
+                if key not in ['step', 'set']:
+                    metrics[step][f'{stage}_{key}'] = val
+    data = pd.DataFrame.from_dict(metrics, orient='index') 
+    data.insert(0, 'step', data.index)
+    data.to_csv(os.path.join(results_path, 'metrics.csv'), index=False)
+    return data
+
+def generate_metrics_plots(results_path):
+    filename = os.path.join(results_path, 'metrics.csv')
+    assert os.path.exists(filename), f'File {filename} does not exist.'
+    data = pd.read_csv(filename)
+    plots = [c.replace('train_', '').replace('validation_', '') for c in data.columns if c != 'step']
+    for p in plots:
+        train = data[f'train_{p}']
+        val = data[f'validation_{p}']
+        f = plt.figure(figsize=(6, 3))
+        plt.plot(train, label='train')
+        plt.plot(val, '--', label='validation')
+        plt.title(p)
+        plt.legend()
+        plt.savefig(os.path.join(results_path, f'metric_{p}.png'))
+        plt.close(f)
