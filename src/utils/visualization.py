@@ -58,21 +58,6 @@ def get_latent_embeddings(encoder, dataloader, device, n_points=10_000):
     return np.array(embeddings), np.array(labels)
 
 
-def init_random_encoder(shape, cfg):
-    """
-    Initializes a random encoder.
-
-    Args:
-        shape: the shape of the input to the encoder
-        cfg: config for encoder
-
-    Returns:
-        random_encoder: the encoder with random weights
-    """
-    random_encoder = Encoder(shape, cfg)
-    return random_encoder
-
-
 def get_tsne(encoder, dataloader, device, n_points=10_000, perplexity=40, n_iter=300):
     """
     Computes the t-SNE embedding of the latent space of the encoder.
