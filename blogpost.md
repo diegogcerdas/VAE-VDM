@@ -118,9 +118,9 @@ where $s(i) = (i-1)/T, t(i)=i/T$ for finite $T$, they derive a remarkably simple
 
 #### Formulation 2: Score-based Generative Models
 
-[Score-based models](https://arxiv.org/abs/1907.05600) $s\_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla\_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([Song and Ermon 2020](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
+[Score-based models 2019](https://arxiv.org/abs/1907.05600) $s\_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla\_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([Song and Ermon 2020](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
 
-However, a new difficulty arises when estimating the score in regions with low probability density. To counteract this, data points are perturbed with noise, so that low-density areas are populated. Using multiple noise scales is beneficial for the model, as it learns the score for different amounts of signal remaining in the perturbed data ([Song et al.](https://arxiv.org/abs/2006.09011)).
+However, a new difficulty arises when estimating the score in regions with low probability density. To counteract this, data points are perturbed with noise, so that low-density areas are populated. Using multiple noise scales is beneficial for the model, as it learns the score for different amounts of signal remaining in the perturbed data ([Song et al. 2021](https://arxiv.org/abs/2006.09011)).
 
 By generalizing the number of noise scales to infinity, the noise perturbation procedure can be represented by a stochastic differential equation (SDE). We can then reverse the perturbation process by using the reverse SDE.
 
