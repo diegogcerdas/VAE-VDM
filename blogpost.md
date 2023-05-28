@@ -56,7 +56,7 @@ $$ \log p\_\theta(\mathbf{x}) \geq \mathbb{E}\_{\mathbf{w} \sim q\_\phi(\mathbf{
 
 Here, the first term of the loss is a reconstruction term measuring how much the reconstructed data resembles the input. The second term is a regularization term that encourages the learned approximate posterior to be close to the prior distribution, thus enforcing latent space regularity and exploration.
 
-The probabilistic nature of VAEs facilitates the exploration of the latent space and the generation of diverse and novel outputs. The success of VAEs in representation learning can be attributed to their ability to disentangle underlying factors of variation and capture complex dependencies in the data, enabling them to learn meaningful and interpretable representations, but they are often subject to producing blurry images that is often associated with the simplified distribution assumption[](https://arxiv.org/abs/1702.08658). Diffusion models, on the other hand, are known to produce high-quality samples, we briefly discuss them in the next section.
+The probabilistic nature of VAEs facilitates the exploration of the latent space and the generation of diverse and novel outputs. The success of VAEs in representation learning can be attributed to their ability to disentangle underlying factors of variation and capture complex dependencies in the data, enabling them to learn meaningful and interpretable representations, but they are often subject to producing blurry images that is often associated with the simplified distribution assumption ([Zhao et al. 2017](https://arxiv.org/abs/1702.08658)). Diffusion models, on the other hand, are known to produce high-quality samples, we briefly discuss them in the next section.
 
 ### Diffusion-based Models
 
@@ -373,3 +373,67 @@ Jacky: Contributed in architectural approach of our experiments from a theoretic
 Maks: Designed the experiments, ran some of them, visualized and reported the results. Helped with the code implementation. 
 
 ## References
+
+[[1]] our GitHub repository (https://github.com/diegogcerdas/VAE-VDM)
+
+[[2]] Kingma and Welling 2014 (https://arxiv.org/abs/1312.6114)
+
+[Blei et al. 2016](https://arxiv.org/abs/1601.00670)
+
+[Zhao et al. 2017](https://arxiv.org/abs/1702.08658)
+
+[Ho et al. 2020](https://arxiv.org/abs/2006.11239)
+
+[Song et al. 2020](https://arxiv.org/abs/2006.09011)
+
+[Huang et al. 2021](https://arxiv.org/abs/2106.02808)
+
+[this blog post by The AI Summer](https://theaisummer.com/diffusion-models/)
+
+[Diffusion probabilistic models (DPMs)](https://arxiv.org/abs/1503.03585)
+
+[Ho et al. 2020](https://arxiv.org/abs/2006.11239)
+
+[Nichol and Dhariwal 2021](https://arxiv.org/abs/2102.09672)
+
+[Sohl et al. 2015](https://arxiv.org/abs/1503.03585)
+
+[Chen 2023](https://arxiv.org/abs/2301.10972)
+
+[DDPMs](https://arxiv.org/abs/2006.11239)
+
+[Nichol et al. (2021)](https://arxiv.org/abs/2102.09672)
+
+[Variational Diffusion Models (VDMs)](https://arxiv.org/abs/2107.00630)
+
+[hierarchical VAEs](https://arxiv.org/abs/1602.02282)
+
+[Score-based models](https://arxiv.org/abs/1907.05600)
+
+[Song and Ermon 2020](https://arxiv.org/abs/2006.09011)
+
+[Song et al.](https://arxiv.org/abs/2006.09011)
+
+[Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others)
+
+[Explicit Score Matching (ESM)](https://www.jmlr.org/papers/volume6/hyvarinen05a/hyvarinen05a.pdf)
+
+[this blog post by Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others)
+
+[Abstreiter et al. (2022)](https://arxiv.org/abs/2105.14257)
+
+[Ronneberger et al.](https://arxiv.org/abs/1505.04597)
+
+[Chen et al. 2016](https://arxiv.org/abs/1611.02731)
+
+[Zhao et al. 2017](https://arxiv.org/abs/1702.08658)
+
+[VDM paper](https://arxiv.org/abs/2107.00630)
+
+[diffusers library](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/vae.py)
+
+[Wang et al. 2021](https://openreview.net/pdf?id=ejAu7ugNj_M)
+
+[*posterior collapse*](https://arxiv.org/abs/2301.00537)
+
+[T-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding)
