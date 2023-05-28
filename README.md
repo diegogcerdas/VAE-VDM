@@ -3,7 +3,7 @@
 This repo contains the code for the project "Representation Learning with Variational Diffusion Models" for the course [Deep Learning 2](https://uvadl2c.github.io/) at the University of Amsterdam.
 
 In [this blogpost](blogpost.md) we present the approach and discuss the results.
-Additional material can be found in the [supplement](supplement.pdf).
+Additional material can be found in the [supplement](Supplement.pdf).
 
 
 ## Setup
