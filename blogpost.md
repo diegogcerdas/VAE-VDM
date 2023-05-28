@@ -45,7 +45,7 @@ But here we face the same problem as above: the integral over $\mathbf{w}$ is ty
 
 ### Variational AutoEncoders
 
-Variational AutoEncoders were first proposed by ([Kingma and Welling 2014](https://arxiv.org/abs/1312.6114)). They are a type of latent variable model that uses *variational inference* ([](https://arxiv.org/abs/1601.00670)) to approximate the likelihood, thus alleviating the problem encountered above. More specifically, VAE describes a probabilistic encoder-decoder architecture where:
+Variational AutoEncoders were first proposed by ([Kingma and Welling 2014](https://arxiv.org/abs/1312.6114)). They are a type of latent variable model that uses *variational inference* ([Blei et al. 2016](https://arxiv.org/abs/1601.00670)) to approximate the likelihood, thus alleviating the problem encountered above. More specifically, VAE describes a probabilistic encoder-decoder architecture where:
 
 - The encoder is defined by the *variational posterior* $q\_\phi(\mathbf{w|x})$, which is parameterized by a neural network.
 - The decoder is defined by the *conditional distribution* $p\_\theta(\mathbf{x|w})$, which is parameterized by another neural network.
@@ -60,20 +60,20 @@ The probabilistic nature of VAEs facilitates the exploration of the latent space
 
 ### Diffusion-based Models
 
-Diffusion-based models are another type of deep generative model that has gained significant attention recently for their ability to generate diverse, high-resolution samples with exceptional fidelity ([](https://arxiv.org/abs/2006.11239),[](https://arxiv.org/abs/2006.09011)). Intuitively, they decompose the generative process into many "denoising steps".
+Diffusion-based models are another type of deep generative model that has gained significant attention recently for their ability to generate diverse, high-resolution samples with exceptional fidelity ([Ho et al. 2020](https://arxiv.org/abs/2006.11239),[Song et al. 2020](https://arxiv.org/abs/2006.09011)). Intuitively, they decompose the generative process into many "denoising steps".
 
 More specifically, a diffusion-based model can be dissected into a *forward diffusion process* and a *reverse diffusion process*. 
 
 - The forward process gradually adds noise to samples from the data distribution $p\_\text{data}(\mathbf{x})$, until the perturbed samples lose all the information they originally contained.
 - The reverse process is a neural network that learns to reverse the noising process, in order to effectively generate new data samples. 
 
-Two alternative formulations of diffusion-based modeling have been proposed and thoroughly researched: *diffusion probabilistic models* and *score-based generative models*. Although they were motivated independently, they share many connections under the right assumptions ([](https://arxiv.org/abs/2106.02808)). Let's take a closer look at each of them.
+Two alternative formulations of diffusion-based modeling have been proposed and thoroughly researched: *diffusion probabilistic models* and *score-based generative models*. Although they were motivated independently, they share many connections under the right assumptions ([Huang et al. 2021](https://arxiv.org/abs/2106.02808)). Let's take a closer look at each of them.
 
 (*For a complete introduction to diffusion-based models, we recommend [this blog post by The AI Summer](https://theaisummer.com/diffusion-models/)*). 
 
 #### Formulation 1: Diffusion Probabilistic Models
 
-One way to look at diffusion-based models is as latent variable models. [Diffusion probabilistic models (DPMs)](https://arxiv.org/abs/1503.03585) first introduced this setting, where-after many extensions and improvements have been published ([](https://arxiv.org/abs/2006.11239),[](https://arxiv.org/abs/2102.09672)). 
+One way to look at diffusion-based models is as latent variable models. [Diffusion probabilistic models (DPMs)](https://arxiv.org/abs/1503.03585) first introduced this setting, where-after many extensions and improvements have been published ([Ho et al. 2020](https://arxiv.org/abs/2006.11239),[Nichol and Dhariwal 2021](https://arxiv.org/abs/2102.09672)). 
 
 For the forward diffusion process, let us assume the real data distribution to be $q(\mathbf{x})$ from which we can sample a data point (image), $\mathbf{x}\_0 \sim q(\mathbf{x})$. We can then define the forward diffusion process as
 
@@ -87,7 +87,7 @@ $$ q(\mathbf{x}\_t \vert \mathbf{x}\_0) = \mathcal{N}(\mathbf{x}\_t; \sqrt{\bar{
 
 where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \prod\_{i=1}^t \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
 
-The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between $\beta$ and subsequently impacts the performance of the diffusion process [](https://arxiv.org/abs/2301.10972).  
+The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}\_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between $\beta$ and subsequently impacts the performance of the diffusion process [Chen 2023](https://arxiv.org/abs/2301.10972).  
 
 Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $\mathbf{x}\_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $\mathbf{x}\_0$ from the true distribution. The conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. 
 
@@ -118,7 +118,7 @@ where $s(i) = (i-1)/T, t(i)=i/T$ for finite $T$, they derive a remarkably simple
 
 #### Formulation 2: Score-based Generative Models
 
-[Score-based models](https://arxiv.org/abs/1907.05600) $s\_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla\_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
+[Score-based models](https://arxiv.org/abs/1907.05600) $s\_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla\_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([Song and Ermon 2020](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
 
 However, a new difficulty arises when estimating the score in regions with low probability density. To counteract this, data points are perturbed with noise, so that low-density areas are populated. Using multiple noise scales is beneficial for the model, as it learns the score for different amounts of signal remaining in the perturbed data ([Song et al.](https://arxiv.org/abs/2006.09011)).
 
@@ -219,7 +219,7 @@ Now that we have formally defined our representation learning method, we want to
 
 ## Experiments
 
-In order to obtain an answer to the questions presented above, we first observe that the Variational Diffusion Model used as a decoder must be powerful enough to fit well to the data, but not too powerful to completely ignore the latent embedding. This observation comes from previous research on the information preference property of VAEs ([](https://arxiv.org/abs/1611.02731),[](https://arxiv.org/abs/1702.08658)). We expect this setting to allow the encoder to learn good representations that are useful for the decoder.
+In order to obtain an answer to the questions presented above, we first observe that the Variational Diffusion Model used as a decoder must be powerful enough to fit well to the data, but not too powerful to completely ignore the latent embedding. This observation comes from previous research on the information preference property of VAEs ([Chen et al. 2016](https://arxiv.org/abs/1611.02731),[Zhao et al. 2017](https://arxiv.org/abs/1702.08658)). We expect this setting to allow the encoder to learn good representations that are useful for the decoder.
 
 With this in mind, we train encoders and VDMs of different sizes, and evaluate the performance of all combinations. We also evaluate unconditional VDMs (i.e. without an encoder) as a baseline.
 
