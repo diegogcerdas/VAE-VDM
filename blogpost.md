@@ -102,7 +102,7 @@ p\_\theta(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t) = \mathcal{N}(\mathbf{x}\_{t-1}
 The detailed diffusion processes can be seen schematically below:
 
 <p align="center">
-<img alt="diffprocess" src="assets/diffprocess.png"/>
+<img style="width:70%" alt="diffprocess" src="assets/diffprocess.png"/><br>
 <em>Schematic depiction of the Markov chain of forward and reverse diffusion process. Showing how we can sample from complete isotropic noise to an image from the real data distribution. Image source: [DDPMs](https://arxiv.org/abs/2006.11239).</em>
 </p>
 
@@ -125,7 +125,7 @@ However, a new difficulty arises when estimating the score in regions with low p
 By generalizing the number of noise scales to infinity, the noise perturbation procedure can be represented by a stochastic differential equation (SDE). We can then reverse the perturbation process by using the reverse SDE.
 
 <p align="center">
-<img alt="sde_schematic" src="assets/sde_schematic.jpg"/>
+<img style="width:60%" alt="sde_schematic" src="assets/sde_schematic.jpg"/><br>
 <em>Forward and reverse diffusion processes for a score-based model represented as an SDE. Image by [Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others).</em>
 </p>
 
@@ -194,14 +194,14 @@ This can be seen as a typical VAE loss, where the reconstruction term (first ter
 The result is the following: during training, an input image $\mathbf{x}$ passes through the encoder, yielding a representation $\mathbf{w}$ (1); for each timestep $t$, the forward diffusion process of the VDM applies noise $\epsilon$ to produce $\mathbf{z}\_t$ (2); the reverse diffusion process (implemented as a UNet) takes as input $\mathbf{w}$, $\mathbf{z}\_t$, and the time information $t$; it then outputs the noise $\hat{\mathbf{\epsilon}}$ (3) which should be close to $\epsilon$.
 
 <p align="center">
-<img alt="architecture" src="assets/architecture.png"/>
+<img style="width:600px" alt="architecture" src="assets/architecture.png"/><br>
 <em>Schematic of the VAE-VDM architecture</em>
 </p>
 
 After training, the reverse process starts from a purely-noisy image and iteratively denoises it until we obtain a sample of the data distribution. At every denoising step, it receives the representation $\mathbf{w}$, which can either be sampled from the prior over the latent variables (*fully-generative setting*) or encoded from a test image for which we want to generate similar samples (*guided generation*).
 
 <p align="center">
-<img alt="generations" src="assets/generations.png"/>
+<img style="width:80%" alt="generations" src="assets/generations.png"/><br>
 <em>Different generation strategies offered by our model.</em>
 </p>
 
@@ -284,7 +284,7 @@ We begin by noting that the KL-divergence drops to zero for all experiments. Giv
 The following plots show the BPD and FID obtained from different combinations of VDM and encoder. The plots are grouped by the VDM size and colored by the encoder size, from largest to smallest model. It can clearly be seen that the VDM size is correlated with better performance. However, changes in the encoder result in no positive change in performance.  
 
 <p align="center">
-<img alt="BPD and fid results" src="assets/metrics.jpg"/>
+<img style="width:80%" alt="BPD and fid results" src="assets/metrics.jpg"/><br>
 <em>FID and BPD results of different combinations of VDM and encoder</em>
 </p>
 
@@ -299,7 +299,7 @@ We obtain sampling results that are in line with the obtained metrics. The SVDM 
 In the case of the MVDM, most of the outputs do not correspond to actual digits and look like incomprehensible scribbles. This is likely due to the decreased power of the Variational Diffusion Model, resulting in an inability to correctly model the data distribution. We expected the encoder to be beneficial in this case, but also observe no qualitative improvement.
 
 <p align="center">
-<img alt="Samples from SVDM and MVDM" src="assets/samples.png"/>
+<img alt="Samples from SVDM and MVDM" src="assets/samples.png"/><br>
 <em>Samples from trained SVDM and MVDM, with or without an encoder</em>
 </p>
 
@@ -310,7 +310,7 @@ How do we confirm that the Variational Diffusion Model is not taking into accoun
 The input image is first encoded into the representation $\mathbf{w}$. This is then fed to every step of the denoising process in the VDM: from pure noise up to a clean data sample. In the next figure, we show this reconstruction process for different input images.
 
 <p align="center">
-<img alt="reconstruction" src="assets/recon.png"/>
+<img style="width:400px" alt="reconstruction" src="assets/recon.png"/><br>
 <em>Reconstruction of samples. The first column is the original sample passed to the encoder. The second column is a purely noisy image. The rest of the columns are evenly distributed steps through the denoising process. The model used is TVDM/OE.</em>
 </p>
 
@@ -323,7 +323,7 @@ In our first hypothesis, we explain that the encoder will ideally encode the dat
 We visualize the resulting structure of that embedding space in a reduced 2-dimensional manifold using [T-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) method to show qualitative results. We chose to show results using MVDM for training since the encoder has more responsibility in settings with a less powerful decoder.
 
 <p align="center">
-<img alt="t-SNE OE MNIST" src="assets/tsne_mnist.png"/>
+<img style="width:80%" alt="t-SNE OE MNIST" src="assets/tsne_mnist.png"/><br>
 <em>t-SNE plot of the output of the encoder on MNIST. The images correspond to randomly intilialized OE, OE trained with TVDM, UE(OE with no KL) trained with TVDM.</em>
 </p>
 
@@ -336,7 +336,7 @@ To assess the effect of posterior collapse, we visualize the embeddings obtained
 To further explore this, we also visualize the embeddings for the CIFAR10 dataset and TVDM. This dataset is more complex, so we no longer observe any structure in the randomly initialized latent space. When training without regularization (UE) the learned embedding starts to show some organization. Again, we do not see this happening for the regularized version.
 
 <p align="center">
-<img alt="t-SNE OE, CIFAR10" src="assets/tsne_cifar10.png"/>
+<img style="width:80%" alt="t-SNE OE, CIFAR10" src="assets/tsne_cifar10.png"/><br>
 <em>t-SNE plot of the output of the encoder on CIFAR10. The images correspond to randomly intilialized OE, OE trained with TVDM, UE(OE with no KL) trained with TVDM.</em>
 </p>
 
