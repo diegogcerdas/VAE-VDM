@@ -19,6 +19,6 @@ export CUDA_HOME=$CONDA_PREFIX
 
 cd ~/VAE-VDM/src
 
-EXP=exp05
+EXP=exp10
 
 srun python -u eval.py --results-path results/$EXP

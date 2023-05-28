@@ -9,6 +9,7 @@ from utils.utils import (
 from torch.utils.data import Subset
 from utils.logging import log, log_and_save_metrics
 import torch
+import numpy as np
 import math
 from tqdm.auto import tqdm
 from torchvision.utils import save_image
@@ -88,9 +89,8 @@ class Evaluator:
     def eval_model(self, model, *, is_ema, cover_train_set=False):
         log(f"\n *** Evaluating {'EMA' if is_ema else 'online'} model\n")
         self.sample_images(model, is_ema=is_ema)
-        self.reconstruct_images(model, 0.4, 10, 250, 10, is_ema=is_ema)
-        self.reconstruct_images(model, 0.6, 10, 250, 10, is_ema=is_ema)
-        self.reconstruct_images(model, 0.8, 10, 250, 10, is_ema=is_ema)
+        for noise_level in np.arange(0.3, 1.1, 0.1):
+            self.reconstruct_images(model, round(noise_level, 1), 10, 250, 10, is_ema=is_ema)
         self.compute_latent_manifold('tsne', model.encoder, is_trained_encoder=True, is_ema=is_ema)
         self.compute_latent_manifold('pca', model.encoder, is_trained_encoder=True, is_ema=is_ema)
         random_encoder = model.encoder.clone_with_random_weights()
