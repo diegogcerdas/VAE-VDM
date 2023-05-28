@@ -38,7 +38,7 @@ See [`train.py`](train.py) for more training options.
 Find the scripts to reproduce the experiments in the paper in [`scripts/`](scripts/):
 
 ```bash
-sh scripts/exp05.sh
+sh scripts/TVDM_OE.sh
 ```
 
 
