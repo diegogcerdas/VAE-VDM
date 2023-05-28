@@ -316,7 +316,7 @@ The input image is first encoded into the representation $\mathbf{w}$. This is t
 
 The reconstructions show no resemblance between the encoded image and the reconstructed sample, which shows that the VDM model does not take into account the embedding during denoising. Without posterior collapse, we would expect the VDM to receive an embedding containing global features of the input image, and to use it during denoising to generate a sample that would contain the same digit.
 
-## Learned Representations
+### Learned Representations
 
 In our first hypothesis, we explain that the encoder will ideally encode the data in a meaningful and interpretable manner. A structured and rich representation in the latent space would also be able to properly provide the denoising VDM the information necessary to recover the image. 
 
