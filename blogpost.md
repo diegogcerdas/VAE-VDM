@@ -87,7 +87,7 @@ $$ q(\mathbf{x}\_t \vert \mathbf{x}\_0) = \mathcal{N}(\mathbf{x}\_t; \sqrt{\bar{
 
 where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \prod\_{i=1}^t \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
 
-The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}\_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between $\beta$ and subsequently impacts the performance of the diffusion process ([Chen 2023])(https://arxiv.org/abs/2301.10972).  
+The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}\_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between $\beta$ and subsequently impacts the performance of the diffusion process ([Chen et al. 2023](https://arxiv.org/abs/2301.10972)).  
 
 Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $\mathbf{x}\_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $\mathbf{x}\_0$ from the true distribution. The conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. 
 
