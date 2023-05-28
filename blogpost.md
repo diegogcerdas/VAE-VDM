@@ -265,7 +265,7 @@ We evaluated the performance of the models using these metrics:
 
 2. Fréchet Inception Distance (FID): The FID is a measure of similarity between two datasets of images. The FID calculates the Fréchet distance between two multivariate Gaussians fitted to feature representations of the Inception network. The two Gaussians are fitted to represent the real and generated images respectively. A lower FID score indicates that the two datasets of images are more similar, or in other words, that the generated images are more similar to the real images.
 
-3. KL-divergence between the prior over the latent encoding and the variational posterior, indicating the presence of posterior collapse.
+3. KL-divergence between the prior over the latent encoding and the variational posterior.
 
 ## Results
 
