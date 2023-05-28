@@ -17,40 +17,42 @@ Project supervised by Samuele Papa for the course *Deep Learning II* at the Univ
 
 ### Generative Modeling
 
-Let’s assume we have a true underlying data distribution $p_\text{data}(\mathbf{x})$, and a dataset $\mathcal{D}$ of i.i.d. samples from this distribution. Our goal is to learn a likelihood $p_\theta(\mathbf{x})$ from $\mathcal{D}$ that closely resembles $p_\text{data}(\mathbf{x})$, so that we can generate new data by sampling from it.
+Let’s assume we have a true underlying data distribution $p\_\text{data}(\mathbf{x})$, and a dataset $\mathcal{D}$ of i.i.d. samples from this distribution. Our goal is to learn a likelihood $p\_\theta(\mathbf{x})$ from $\mathcal{D}$ that closely resembles $p\_\text{data}(\mathbf{x})$, so that we can generate new data by sampling from it.
 
-One way to learn $p_\theta(\mathbf{x})$ is through Maximum Likelihood Estimation (MLE), where the objective is to find the optimal parameters $\theta$ according to:
-$$\underset{\theta}{\mathrm{max}} \text{ }\mathbb{E}_{p_\text{data}(\mathbf{x})}[\log p_\theta(\mathbf{x})],$$
+One way to learn $p\_\theta(\mathbf{x})$ is through Maximum Likelihood Estimation (MLE), where the objective is to find the optimal parameters $\theta$ according to:
+
+$$\underset{\theta}{\mathrm{max}} \\;\mathbb{E}\_{p\_\text{data}(\mathbf{x})}[\log p\_\theta(\mathbf{x})],$$
+
 where the expectation is approximated using a sample average over $\mathcal{D}$.
 
-In practice, exactly-computing $p_\theta(\mathbf{x})$ is typically an intractable quantity due to the normalization constant. To enable maximum likelihood training, likelihood-based models face the challenge of either constraining their model architectures to make the computations feasible, or approximating the normalizing constant at the cost of computational complexity. We continue by discussing some of these approaches below. 
+In practice, exactly-computing $p\_\theta(\mathbf{x})$ is typically an intractable quantity due to the normalization constant. To enable maximum likelihood training, likelihood-based models face the challenge of either constraining their model architectures to make the computations feasible, or approximating the normalizing constant at the cost of computational complexity. We continue by discussing some of these approaches below. 
 
 #### Latent Variable Models
 
 In general, we are also interested in modeling the *factors* $\mathbf{w}$ in data that are crucial for generating an object. Once modeled, these factors can be used as a *representation* of the original data.
 
-Latent variable models introduce the generative process $p_\theta(\mathbf{x,w}) = p_\theta(\mathbf{x|w})p(\mathbf{w})$, where
+Latent variable models introduce the generative process $p\_\theta(\mathbf{x,w}) = p\_\theta(\mathbf{x|w})p(\mathbf{w})$, where
 
 - $p(\mathbf{w})$ is a *prior distribution* over the latent variables, and
--  $p_\theta(\mathbf{x|w})$ is the *conditional distribution*, parameterized by $\theta$.
+-  $p\_\theta(\mathbf{x|w})$ is the *conditional distribution*, parameterized by $\theta$.
 
 Since only $\mathbf{x}$ is accessible during training, we marginalize out the latent variables $\mathbf{w}$ to obtain the likelihood of the data:
-$$p_\theta(\mathbf{x}) = \int_\mathbf{w} p_\theta(\mathbf{x|w})p(\mathbf{w})d\mathbf{w}.$$
+$$p\_\theta(\mathbf{x}) = \int\_\mathbf{w} p\_\theta(\mathbf{x|w})p(\mathbf{w})d\mathbf{w}.$$
 
 If we want to know how probable a representation $\mathbf{w}$ is for given data $\mathbf{x}$, we are interested in the *posterior distribution*:
-$$p_\theta(\mathbf{w|x}) = p_\theta(\mathbf{x|w})p(\mathbf{w})/p_\theta(\mathbf{x}).$$
+$$p\_\theta(\mathbf{w|x}) = p\_\theta(\mathbf{x|w})p(\mathbf{w})/p\_\theta(\mathbf{x}).$$
 But here we face the same problem as above: the integral over $\mathbf{w}$ is typically intractable, which makes exact likelihood computation unfeasible. 
 
 ### Variational AutoEncoders
 
 Variational AutoEncoders were first proposed by ([Kingma and Welling 2014](https://arxiv.org/abs/1312.6114)). They are a type of latent variable model that uses *variational inference* ([](https://arxiv.org/abs/1601.00670)) to approximate the likelihood, thus alleviating the problem encountered above. More specifically, VAE describes a probabilistic encoder-decoder architecture where:
 
-- The encoder is defined by the *variational posterior* $q_\phi(\mathbf{w|x})$, which is parameterized by a neural network.
-- The decoder is defined by the *conditional distribution* $p_\theta(\mathbf{x|w})$, which is parameterized by another neural network.
+- The encoder is defined by the *variational posterior* $q\_\phi(\mathbf{w|x})$, which is parameterized by a neural network.
+- The decoder is defined by the *conditional distribution* $p\_\theta(\mathbf{x|w})$, which is parameterized by another neural network.
 
 The network parameters $\phi$ and $\theta$ can be jointly optimized by maximizing the variational lower bound (VLB) on the log-likelihood:
-$$ \log p_\theta(\mathbf{x}) \geq \mathbb{E}_{\mathbf{w} \sim q_\phi(\mathbf{w|x})} \left[\log p_\theta(\mathbf{x|w})\right] - D_\text{KL}(q_\phi(\mathbf{w|x}) || p(\mathbf{w}))
-    = -\mathcal{L}_{VAE}.$$
+$$ \log p\_\theta(\mathbf{x}) \geq \mathbb{E}\_{\mathbf{w} \sim q\_\phi(\mathbf{w|x})} \left[\log p\_\theta(\mathbf{x|w})\right] - D\_\text{KL}(q\_\phi(\mathbf{w|x}) || p(\mathbf{w}))
+    = -\mathcal{L}\_{VAE}.$$
 Here, the first term of the loss is a reconstruction term measuring how much the reconstructed data resembles the input. The second term is a regularization term that encourages the learned approximate posterior to be close to the prior distribution, thus enforcing latent space regularity and exploration.
 
 The probabilistic nature of VAEs facilitates the exploration of the latent space and the generation of diverse and novel outputs. The success of VAEs in representation learning can be attributed to their ability to disentangle underlying factors of variation and capture complex dependencies in the data, enabling them to learn meaningful and interpretable representations, but they are often subject to producing blurry images that is often associated with the simplified distribution assumption [](https://arxiv.org/pdf/1702.08658.pdf). Diffusion models, on the other hand, are known to produce high-quality samples, we briefly discuss them in the next section.
@@ -61,7 +63,7 @@ Diffusion-based models are another type of deep generative model that has gained
 
 More specifically, a diffusion-based model can be dissected into a *forward diffusion process* and a *reverse diffusion process*. 
 
-- The forward process gradually adds noise to samples from the data distribution $p_\text{data}(\mathbf{x})$, until the perturbed samples lose all the information they originally contained.
+- The forward process gradually adds noise to samples from the data distribution $p\_\text{data}(\mathbf{x})$, until the perturbed samples lose all the information they originally contained.
 - The reverse process is a neural network that learns to reverse the noising process, in order to effectively generate new data samples. 
 
 Two alternative formulations of diffusion-based modeling have been proposed and thoroughly researched: *diffusion probabilistic models* and *score-based generative models*. Although they were motivated independently, they share many connections under the right assumptions ([](https://arxiv.org/abs/2106.02808)). Let's take a closer look at each of them.
@@ -72,64 +74,64 @@ Two alternative formulations of diffusion-based modeling have been proposed and 
 
 One way to look at diffusion-based models is as latent variable models. [Diffusion probabilistic models (DPMs)](https://arxiv.org/abs/1503.03585) first introduced this setting, where-after many extensions and improvements have been published ([](https://arxiv.org/abs/2006.11239),[](https://arxiv.org/abs/2102.09672)). 
 
-For the forward diffusion process, let us assume the real data distribution to be $q(\mathbf{x})$ from which we can sample a data point (image), $\mathbf{x}_0 \sim q(\mathbf{x})$. We can then define the forward diffusion process as
+For the forward diffusion process, let us assume the real data distribution to be $q(\mathbf{x})$ from which we can sample a data point (image), $\mathbf{x}\_0 \sim q(\mathbf{x})$. We can then define the forward diffusion process as
 $$
-q(\mathbf{x}_t \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_t; \sqrt{1 - \beta_t} \mathbf{x}_{t-1}, \beta_t\mathbf{I}) \quad
-q(\mathbf{x}_{1:T} \vert \mathbf{x}_0) = \prod^T_{t=1} q(\mathbf{x}_t \vert \mathbf{x}_{t-1}) $$ where at each time step $t$, the data is updated by adding some Gaussian noise, producing a gradually noisier sequence of samples $\mathbf{x}_1, ..., \mathbf{x}_T$, where $\mathbf{x}_T$ equals an isotropic Gaussian distribution as $T \to \infty$. Hence, at every time step $t$, we can draw  from the conditional Gaussian distribution a new sample $\mathbf{x}_t=\sqrt{1-\beta_t} \mathbf{x}_{t-1}+\sqrt{\beta_t} \epsilon$. 
+q(\mathbf{x}\_t \vert \mathbf{x}\_{t-1}) = \mathcal{N}(\mathbf{x}\_t; \sqrt{1 - \beta\_t} \mathbf{x}\_{t-1}, \beta\_t\mathbf{I}) \quad
+q(\mathbf{x}\_{1:T} \vert \mathbf{x}\_0) = \prod^T\_{t=1} q(\mathbf{x}\_t \vert \mathbf{x}\_{t-1}) $$ where at each time step $t$, the data is updated by adding some Gaussian noise, producing a gradually noisier sequence of samples $\mathbf{x}\_1, ..., \mathbf{x}\_T$, where $\mathbf{x}\_T$ equals an isotropic Gaussian distribution as $T \to \infty$. Hence, at every time step $t$, we can draw  from the conditional Gaussian distribution a new sample $\mathbf{x}\_t=\sqrt{1-\beta\_t} \mathbf{x}\_{t-1}+\sqrt{\beta\_t} \epsilon$. 
 
-By defining the forward process as above,  [Sohl et al. 2015](https://arxiv.org/abs/1503.03585) have shown that we do not need to repeatedly draw from the distribution $q$ to reach a certain sample $\mathbf{x}_t$. This formulation is given by:
+By defining the forward process as above,  [Sohl et al. 2015](https://arxiv.org/abs/1503.03585) have shown that we do not need to repeatedly draw from the distribution $q$ to reach a certain sample $\mathbf{x}\_t$. This formulation is given by:
 $$
-    q(\mathbf{x}_t \vert \mathbf{x}_0) = \mathcal{N}(\mathbf{x}_t; \sqrt{\bar{\alpha}_t} \mathbf{x}_0, (1 - \bar{\alpha}_t)\mathbf{I})
+    q(\mathbf{x}\_t \vert \mathbf{x}\_0) = \mathcal{N}(\mathbf{x}\_t; \sqrt{\bar{\alpha}\_t} \mathbf{x}\_0, (1 - \bar{\alpha}\_t)\mathbf{I})
 $$
-where we let $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{i=1}^t \alpha_i$. This provides us with to have the flexibility to sample $\mathbf{x}_t$ at any desired noise level, given the condition of $\textbf{x}_0$.
+where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \prod\_{i=1}^t \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
 
 The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between the $\beta$s and subsequently impacts the performance of the diffusion process [](https://arxiv.org/abs/2301.10972).  
 
-Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(\mathbf{x}_{t-1} | \mathbf{x}_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $\mathbf{x}_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $\mathbf{x}_0$ from the true distribution. The conditional distribution $p(\mathbf{x}_{t-1} | \mathbf{x}_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. 
+Now that we have defined the forward process, how can we reverse this process? If we can access the conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$, it would be possible to reverse the diffusion process. Simply by sampling random Gaussian noise $\mathbf{x}\_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$ and iteratively denoising it, would give us the possibility to obtain a sample $\mathbf{x}\_0$ from the true distribution. The conditional distribution $p(\mathbf{x}\_{t-1} | \mathbf{x}\_t)$ is, however, in most cases intractable due to its dependency on the entire dataset. 
 
-Therefore, in order to run the reverse diffusion process effectively, it becomes essential to learn a suitable model that can approximate the conditional probabilities. These conditional probabilities play a crucial role in understanding how the data evolves during the diffusion process. By learning a model denoted as $p_\theta$, where 
+Therefore, in order to run the reverse diffusion process effectively, it becomes essential to learn a suitable model that can approximate the conditional probabilities. These conditional probabilities play a crucial role in understanding how the data evolves during the diffusion process. By learning a model denoted as $p\_\theta$, where 
 $\theta$ represents the model's parameters, we aim to capture the intricate relationships and dependencies within the data. 
 
 The reverse diffusion process can be denoted as: 
 $$
-    p_\theta(\mathbf{x}_{0:T}) = p(\mathbf{x}_T) \prod^T_{t=1} p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) \quad
-p_\theta(\mathbf{x}_{t-1} \vert \mathbf{x}_t) = \mathcal{N}(\mathbf{x}_{t-1}; \boldsymbol{\mu}_\theta(\mathbf{x}_t, t), \boldsymbol{\Sigma}_\theta(\mathbf{x}_t, t))
+    p\_\theta(\mathbf{x}\_{0:T}) = p(\mathbf{x}\_T) \prod^T\_{t=1} p\_\theta(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t) \quad
+p\_\theta(\mathbf{x}\_{t-1} \vert \mathbf{x}\_t) = \mathcal{N}(\mathbf{x}\_{t-1}; \boldsymbol{\mu}\_\theta(\mathbf{x}\_t, t), \boldsymbol{\Sigma}\_\theta(\mathbf{x}\_t, t))
 $$
 The detailed diffusion processes can be seen schematically below:
 
 <p align="center">
 <img alt="diffprocess" src="assets/diffprocess.png"/>
-<em>Schematic depiction of the Markov chain of forward and reverse diffusion process. Showing how we can sample from $\mathbf{x_T}$ (complete isotropic noise) to an image $\mathbf{x_0}$ from the real data distribution. Image source: [DDPMs](https://arxiv.org/abs/2006.11239).</em>
+<em>Schematic depiction of the Markov chain of forward and reverse diffusion process. Showing how we can sample from $\mathbf{x\_T}$ (complete isotropic noise) to an image $\mathbf{x\_0}$ from the real data distribution. Image source: [DDPMs](https://arxiv.org/abs/2006.11239).</em>
 </p>
 
-Thus, assuming that our model $p_\theta$ follows a Gaussian distribution, it is tasked with learning the mean and variance parameterized by $\mu_\theta$ and variance $\Sigma_\theta$, respectively. 
+Thus, assuming that our model $p\_\theta$ follows a Gaussian distribution, it is tasked with learning the mean and variance parameterized by $\mu\_\theta$ and variance $\Sigma\_\theta$, respectively. 
 
-In literature there are different approaches as to what to do with the variance. Traditional approaches would set the variance to $\Sigma_\theta(\mathbf{x_t}, t) = \sigma_{t}^{2}\mathbf{I}$. [Nichol et al. (2021)](https://arxiv.org/abs/2102.09672) proposed a novel approach where the model itself learns the optimal variance values during the denoising phase. This departure from traditional approaches, resulted in significant improvements in the obtained results.
+In literature there are different approaches as to what to do with the variance. Traditional approaches would set the variance to $\Sigma\_\theta(\mathbf{x\_t}, t) = \sigma\_{t}^{2}\mathbf{I}$. [Nichol et al. (2021)](https://arxiv.org/abs/2102.09672) proposed a novel approach where the model itself learns the optimal variance values during the denoising phase. This departure from traditional approaches, resulted in significant improvements in the obtained results.
 
 The idea behind this is that when enabling the model to learn the variance, it gains the flexibility to adapt and adjust the noise reduction process based on the specific characteristics of the data. This dynamic learning of variance allows for a more fine-grained control of the denoising process, leading to enhanced performance and improved results.
 
-[Variational Diffusion Models (VDMs)](https://arxiv.org/abs/2107.00630) build upon DPMs to achieve state-of-the-art likelihood approximation. They describe an architecture based on [hierarchical VAEs](https://arxiv.org/abs/1602.02282), and define a sequence of increasingly noisy versions of the data $\mathbf{x}$ represented by the latent variables $\mathbf{z}_t$, where $t = 0$ is the least noisy version and $t = 1$ is the noisiest version. By analyzing the variational lower bound:
-$$-\log p_\theta(\mathbf{x}) \leq  \underbrace{D_\text{KL}[q(\mathbf{z}_1|\mathbf{x})||p(\mathbf{z}_1)]}_{\text{Prior loss}} + \underbrace{\mathbb{E}_{q(\mathbf{z}_{0}|\mathbf{x})}[-\log p_\theta(\mathbf{x}|\mathbf{z}_0)]}_{\text{Reconstruction loss}} + \underbrace{\sum_{i=1}^T \mathbb{E}_{q(\mathbf{z}_{t(i)}|\mathbf{x})}D_\text{KL}[q(\mathbf{z}_{s(i)}|\mathbf{z}_{t(i)}, \mathbf{x})||p_\theta(\mathbf{z}_{s(i)}|\mathbf{z}_{t(i)})]}_{\text{Diffusion loss}},$$
-where $s(i) = (i-1)/T, t(i)=i/T$ for finite $T$, they derive a remarkably simple loss $L_{VDM}$.
+[Variational Diffusion Models (VDMs)](https://arxiv.org/abs/2107.00630) build upon DPMs to achieve state-of-the-art likelihood approximation. They describe an architecture based on [hierarchical VAEs](https://arxiv.org/abs/1602.02282), and define a sequence of increasingly noisy versions of the data $\mathbf{x}$ represented by the latent variables $\mathbf{z}\_t$, where $t = 0$ is the least noisy version and $t = 1$ is the noisiest version. By analyzing the variational lower bound:
+$$-\log p\_\theta(\mathbf{x}) \leq  \underbrace{D\_\text{KL}[q(\mathbf{z}\_1|\mathbf{x})||p(\mathbf{z}\_1)]}\_{\text{Prior loss}} + \underbrace{\mathbb{E}\_{q(\mathbf{z}\_{0}|\mathbf{x})}[-\log p\_\theta(\mathbf{x}|\mathbf{z}\_0)]}\_{\text{Reconstruction loss}} + \underbrace{\sum\_{i=1}^T \mathbb{E}\_{q(\mathbf{z}\_{t(i)}|\mathbf{x})}D\_\text{KL}[q(\mathbf{z}\_{s(i)}|\mathbf{z}\_{t(i)}, \mathbf{x})||p\_\theta(\mathbf{z}\_{s(i)}|\mathbf{z}\_{t(i)})]}\_{\text{Diffusion loss}},$$
+where $s(i) = (i-1)/T, t(i)=i/T$ for finite $T$, they derive a remarkably simple loss $L\_{VDM}$.
 
 #### Formulation 2: Score-based Generative Models
 
-[Score-based models](https://arxiv.org/abs/1907.05600) $s_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
+[Score-based models](https://arxiv.org/abs/1907.05600) $s\_\theta(\mathbf{x})$ sidestep the difficulty of intractable likelihood computation by modeling the *score function* $\nabla\_\mathbf{x} \log p(\mathbf{x})$ of the data distribution ([](https://arxiv.org/abs/2006.09011)). Langevin dynamics provides a procedure to sample from the data distribution once the score-based model is trained.
 
 However, a new difficulty arises when estimating the score in regions with low probability density. To counteract this, data points are perturbed with noise, so that low-density areas are populated. Using multiple noise scales is beneficial for the model, as it learns the score for different amounts of signal remaining in the perturbed data (Song et al.)[https://arxiv.org/abs/2006.09011].
 
 By generalizing the number of noise scales to infinity, the noise perturbation procedure can be represented by a stochastic differential equation (SDE). We can then reverse the perturbation process by using the reverse SDE.
 
 <p align="center">
-<img alt="sde_schematic" src="assets/sde_schematic.png"/>
+<img alt="sde_schematic" src="assets/sde_schematic.jpg"/>
 <em>Forward and reverse diffusion processes for a score-based model represented as an SDE. Image by [Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others).</em>
 </p>
 
-Training a score-based model $s_\theta(\mathbf{x})$ to approximate the true score function $\nabla_\mathbf{x} \log p(\mathbf{x})$ can be done through [Explicit Score Matching (ESM)](https://www.jmlr.org/papers/volume6/hyvarinen05a/hyvarinen05a.pdf):
-$$J^{ESM} = \mathbb{E}_{\mathbf{x}_t}\left[\|s_\theta(\mathbf{x}_t, t) - \nabla_{\mathbf{x}_t} \log p(\mathbf{x}_t)\|_2^2\right].$$
+Training a score-based model $s\_\theta(\mathbf{x})$ to approximate the true score function $\nabla\_\mathbf{x} \log p(\mathbf{x})$ can be done through [Explicit Score Matching (ESM)](https://www.jmlr.org/papers/volume6/hyvarinen05a/hyvarinen05a.pdf):
+$$J^{ESM} = \mathbb{E}\_{\mathbf{x}\_t}\left[\|s\_\theta(\mathbf{x}\_t, t) - \nabla\_{\mathbf{x}\_t} \log p(\mathbf{x}\_t)\|\_2^2\right].$$
 
 However, since the true score function is generally unknown, one can apply [Denoising Score Matching (DSM)](https://www.iro.umontreal.ca/~vincentp/Publications/smdae_techreport.pdf):
-$$J^{DSM} = \mathbb{E}_{t}\mathbb{E}_{\mathbf{x}_0}\mathbb{E}_{\mathbf{x}_{t|0}}\left[\lambda(t)\|s_\theta(\mathbf{x}_t, t) - \nabla_{\mathbf{x}_t} \log p(\mathbf{x}_t|\mathbf{x}_0)\|_2^2\right],$$
+$$J^{DSM} = \mathbb{E}\_{t}\mathbb{E}\_{\mathbf{x}\_0}\mathbb{E}\_{\mathbf{x}\_{t|0}}\left[\lambda(t)\|s\_\theta(\mathbf{x}\_t, t) - \nabla\_{\mathbf{x}\_t} \log p(\mathbf{x}\_t|\mathbf{x}\_0)\|\_2^2\right],$$
 where $\lambda(t)$ is a time-dependent constant.
 
 *For more details on score-based generative models, see [this blog post by Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others)*.
@@ -140,12 +142,12 @@ Now that we have covered the basic concepts needed for the rest of the blog post
 
 [Abstreiter et al. (2022)](https://arxiv.org/abs/2105.14257) look at diffusion-based methods represented as stochastic differential equations on a continuous-time domain (i.e., *Formulation 2* as defined above), and leverage them for learning representations in an unsupervised manner. 
 
-Since this setting relies on denoising score matching, they present a new (conditional) formulation of the DSM objective. Here, the score-based model $s_\theta$ takes as additional input the encoding $E_\phi(\mathbf{x}_0)$:
-$$J^{D R L} =\mathbb{E}\_{t, \mathbf{x}\_0, \mathbf{x}\_t}\left[\lambda(t)\left\|s\_\theta\left(\mathbf{x}\_t, t, E_\phi(\mathbf{x}_0)\right)-\nabla\_{\mathbf{x}\_t} \log p\left(\mathbf{x}\_t | \mathbf{x}\_0\right)\right\|\_2^2\right].$$
+Since this setting relies on denoising score matching, they present a new (conditional) formulation of the DSM objective. Here, the score-based model $s\_\theta$ takes as additional input the encoding $E\_\phi(\mathbf{x}\_0)$:
+$$J^{D R L} =\mathbb{E}\_{t, \mathbf{x}\_0, \mathbf{x}\_t}\left[\lambda(t)\left\|s\_\theta\left(\mathbf{x}\_t, t, E\_\phi(\mathbf{x}\_0)\right)-\nabla\_{\mathbf{x}\_t} \log p\left(\mathbf{x}\_t | \mathbf{x}\_0\right)\right\|\_2^2\right].$$
 
-The authors explain that $E_\phi(\mathbf{x}_0)$ learns to extract the information from $\mathbf{x}_0$ in a lower-dimensional space that helps recover $\mathbf{x}_0$ by denoising $\mathbf{x}_t$. 
+The authors explain that $E\_\phi(\mathbf{x}\_0)$ learns to extract the information from $\mathbf{x}\_0$ in a lower-dimensional space that helps recover $\mathbf{x}\_0$ by denoising $\mathbf{x}\_t$. 
 
-They also show that, if all information about $\mathbf{x}_0$ is contained in the representation $z$, then the objective can be reduced to zero. If there is no mutual information, the objective can only be reduced to a constant $$\|\nabla_{\mathbf{x}_t} \log p(\mathbf{x}_t | \mathbf{x}_0) - \nabla_{\mathbf{x}_t}\log p(\mathbf{x}_t)\|_2^2.$$ 
+They also show that, if all information about $\mathbf{x}\_0$ is contained in the representation $z$, then the objective can be reduced to zero. If there is no mutual information, the objective can only be reduced to a constant $$\|\nabla\_{\mathbf{x}\_t} \log p(\mathbf{x}\_t | \mathbf{x}\_0) - \nabla\_{\mathbf{x}\_t}\log p(\mathbf{x}\_t)\|\_2^2.$$ 
 
 This justifies the use of the alternative objective for the purpose of representation learning.
 
@@ -153,7 +155,7 @@ The paper shows the following strengths:
 
 - The formulation of $J^{DRL}$ in the context of denoising score matching provides a strong justification for its use in representation learning.
 - The authors explain how the level of granularity in the encoded features can be manually controlled by modifying the weighting function $\lambda(t)$. They also provide empirical evidence to support this hypothesis.
-- The authors extend the idea to learn an *infinite-dimensional code* by conditioning the encoder on $t$. The new encoder $E_\phi(\mathbf{x}_0, t)$ leads to richer representation learning compared to other static representation learning methods.
+- The authors extend the idea to learn an *infinite-dimensional code* by conditioning the encoder on $t$. The new encoder $E\_\phi(\mathbf{x}\_0, t)$ leads to richer representation learning compared to other static representation learning methods.
 
 - The obtained representations show great potential for downstream tasks and as a pretraining step for semi-supervised image classification.
 
@@ -176,16 +178,16 @@ We have observed that the setting proposed by Abstreiter et al. does not define 
 
 In the following, we use the same notation as introduced in the Variational AutoEncoders section above. First of all, we make the following assumptions about the probabilistic encoder:
 
-- The prior over the latent variables is the standard multivariate Gaussian $p_\theta(\mathbf{w}) = \mathcal{N}(\mathbf{0,I})$.
-- The variational posterior is a Gaussian distribution $q_\phi(\mathbf{w|x}) = \mathcal{N}(\bm{\mu}_\phi(\mathbf{x}), \bm{\sigma}_\phi^2(\mathbf{x})\mathbf{I})$, and $\bm{\mu}_\phi(\mathbf{x}), \bm{\sigma}_\phi^2$ are the outputs of a neural network encoder $E_\phi$.
+- The prior over the latent variables is the standard multivariate Gaussian $p\_\theta(\mathbf{w}) = \mathcal{N}(\mathbf{0,I})$.
+- The variational posterior is a Gaussian distribution $q\_\phi(\mathbf{w|x}) = \mathcal{N}(\bm{\mu}\_\phi(\mathbf{x}), \bm{\sigma}\_\phi^2(\mathbf{x})\mathbf{I})$, and $\bm{\mu}\_\phi(\mathbf{x}), \bm{\sigma}\_\phi^2$ are the outputs of a neural network encoder $E\_\phi$.
 
-Then, we define the probabilistic decoder $p_\theta(\mathbf{x|w})$ to be parameterized by a Variational Diffusion Model $D_\theta$ conditioned on the latent variables $\mathbf{w}$. We parameterize the reverse process with a noise prediction model $\hat{\bm{\epsilon}}_\theta(\mathbf{z}_{t}, \mathbf{w};t)$ implemented as a U-Net [Ronneberger et al.](https://arxiv.org/abs/1505.04597). The network's task is to predict the noise added to the data at each timestep.
+Then, we define the probabilistic decoder $p\_\theta(\mathbf{x|w})$ to be parameterized by a Variational Diffusion Model $D\_\theta$ conditioned on the latent variables $\mathbf{w}$. We parameterize the reverse process with a noise prediction model $\hat{\bm{\epsilon}}\_\theta(\mathbf{z}\_{t}, \mathbf{w};t)$ implemented as a U-Net [Ronneberger et al.](https://arxiv.org/abs/1505.04597). The network's task is to predict the noise added to the data at each timestep.
 
 Combining the loss functions for VAE and VDM, we obtain the following objective:
-$$\mathcal{L}_{VAE'} =  \mathbb{E}_{\mathbf{w} \sim q_\phi(\mathbf{w|x})}\mathcal{L}_\text{VDM} + D_\text{KL}(q_\phi(\mathbf{w|x}) || p(\mathbf{w})).$$
+$$\mathcal{L}\_{VAE'} =  \mathbb{E}\_{\mathbf{w} \sim q\_\phi(\mathbf{w|x})}\mathcal{L}\_\text{VDM} + D\_\text{KL}(q\_\phi(\mathbf{w|x}) || p(\mathbf{w})).$$
 This can be seen as a typical VAE loss, where the reconstruction term (first term on the right-hand side) is the expectation of the VDM loss over all embeddings $\mathbf{w}$.
 
-The result is the following: during training, an input image $\mathbf{x}$ passes through the encoder, yielding a representation $\mathbf{w}$ (1); for each timestep $t$, the forward diffusion process of the VDM applies noise $\epsilon$ to produce $\mathbf{z}_t$ (2); the reverse diffusion process (implemented as a UNet) takes as input $\mathbf{w}$, $\mathbf{z}_t$, and the time information $t$; it then outputs the noise $\hat{\bm{\epsilon}}$ (3) which should be close to $\epsilon$.
+The result is the following: during training, an input image $\mathbf{x}$ passes through the encoder, yielding a representation $\mathbf{w}$ (1); for each timestep $t$, the forward diffusion process of the VDM applies noise $\epsilon$ to produce $\mathbf{z}\_t$ (2); the reverse diffusion process (implemented as a UNet) takes as input $\mathbf{w}$, $\mathbf{z}\_t$, and the time information $t$; it then outputs the noise $\hat{\bm{\epsilon}}$ (3) which should be close to $\epsilon$.
 
 <p align="center">
 <img alt="architecture" src="assets/architecture.png"/>
