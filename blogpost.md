@@ -85,7 +85,7 @@ By defining the forward process as above,  [Sohl et al. 2015](https://arxiv.org/
 
 $$ q(\mathbf{x}\_t \vert \mathbf{x}\_0) = \mathcal{N}(\mathbf{x}\_t; \sqrt{\bar{\alpha}\_t} \mathbf{x}\_0, (1 - \bar{\alpha}\_t)\mathbf{I}) $$
 
-where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \prod\_{i=1}^t \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
+where we let $\alpha\_t = 1 - \beta\_t$ and $\bar{\alpha}\_t = \Pi^t\_{i=1} \alpha\_i$. This provides us with to have the flexibility to sample $\mathbf{x}\_t$ at any desired noise level, given the condition of $\textbf{x}\_0$.
 
 The strength of the noise is controlled by a variance scheduler $\{\beta_t \in (0, 1)\}\_{t=1}^T$. The variance scheduler, can take on various forms to define the relationship between $\beta$ and subsequently impacts the performance of the diffusion process ([Chen et al. 2023](https://arxiv.org/abs/2301.10972)).  
 
