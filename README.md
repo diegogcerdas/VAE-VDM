@@ -8,6 +8,13 @@ Additional material can be found in the [supplement](supplement.pdf).
 
 ## Setup
 
+Clone the repository:
+
+```bash
+git clone https://github.com/diegogcerdas/VAE-VDM.git
+cd VAE-VDM
+```
+
 The environment can be set up with `requirements.txt`. For example, with conda:
 
 ```
@@ -28,7 +35,11 @@ python src/train.py --results-path results/my_experiment/ --use-encoder
 Append `--resume` to the command above to resume training from the latest checkpoint. 
 See [`train.py`](train.py) for more training options.
 
-Find the scripts to reproduce the experiments in the paper in [`scripts/`](scripts/).
+Find the scripts to reproduce the experiments in the paper in [`scripts/`](scripts/):
+
+```bash
+sh scripts/exp05.sh
+```
 
 
 ## Evaluating from checkpoint
