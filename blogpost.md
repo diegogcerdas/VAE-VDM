@@ -374,9 +374,9 @@ Maks: Designed the experiments, ran some of them, visualized and reported the re
 
 ## References
 
-[[1]] our GitHub repository (https://github.com/diegogcerdas/VAE-VDM)
+[1] our GitHub repository (https://github.com/diegogcerdas/VAE-VDM)
 
-[[2]] Kingma and Welling 2014 (https://arxiv.org/abs/1312.6114)
+[2] Kingma and Welling 2014 (https://arxiv.org/abs/1312.6114)
 
 [Blei et al. 2016](https://arxiv.org/abs/1601.00670)
 
