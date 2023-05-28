@@ -93,9 +93,10 @@ class Evaluator:
             self.reconstruct_images(model, round(noise_level, 1), 10, 250, 10, is_ema=is_ema)
         self.compute_latent_manifold('tsne', model.encoder, is_trained_encoder=True, is_ema=is_ema)
         self.compute_latent_manifold('pca', model.encoder, is_trained_encoder=True, is_ema=is_ema)
-        random_encoder = model.encoder.clone_with_random_weights()
-        self.compute_latent_manifold('tsne', random_encoder, is_trained_encoder=False, is_ema=is_ema)
-        self.compute_latent_manifold('pca', random_encoder, is_trained_encoder=False, is_ema=is_ema)
+        if model.encoder is not None:
+            random_encoder = model.encoder.clone_with_random_weights()
+            self.compute_latent_manifold('tsne', random_encoder, is_trained_encoder=False, is_ema=is_ema)
+            self.compute_latent_manifold('pca', random_encoder, is_trained_encoder=False, is_ema=is_ema)
 
         val = [True]
         if cover_train_set:

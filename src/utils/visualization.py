@@ -169,9 +169,12 @@ def reconstruct_batched(vdm_model, dataloader, noise_level, n_samples, n_recon_s
         times = torch.ones(x.shape[0], device=device) * noise_level
         x_t, _ = vdm_model.sample_q_t_0(x, times=times)
 
-        enc_out = vdm_model.encoder(x)
-        posterior = DiagonalGaussianDistribution(enc_out)
-        w = posterior.sample()
+        if vdm_model.encoder is not None:
+            enc_out = vdm_model.encoder(x)
+            posterior = DiagonalGaussianDistribution(enc_out)
+            w = posterior.sample()
+        else:
+            w = None
 
         steps = torch.linspace(noise_level, 0.0, n_recon_steps + 1, device=device)
         # choose n_sample_steps_retrieve evenly spaced (approx) steps to retrieve
