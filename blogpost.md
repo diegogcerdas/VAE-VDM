@@ -374,66 +374,38 @@ Maks: Designed the experiments, ran some of them, visualized and reported the re
 
 ## References
 
-[1] our GitHub repository (https://github.com/diegogcerdas/VAE-VDM)
+[1] Kingma, D. P., & Welling, M. (2014). Auto-Encoding Variational Bayes.
 
-[2] Kingma and Welling 2014 (https://arxiv.org/abs/1312.6114)
+[2] Blei, D. M., Kucukelbir, A., & McAuliffe, J. D. (2016). Variational Inference: A Review for Statisticians.
 
-[Blei et al. 2016](https://arxiv.org/abs/1601.00670)
+[3] Zhao, S., Song, J., & Ermon, S. (2017). Towards Deeper Understanding of Variational Autoencoding Models.
 
-[Zhao et al. 2017](https://arxiv.org/abs/1702.08658)
+[4] Ho, J., Jain, A., & Abbeel, P. (2020). Denoising Diffusion Probabilistic Models.
 
-[Ho et al. 2020](https://arxiv.org/abs/2006.11239)
+[5] Song, Y., & Ermon, S. (2020). Improved Techniques for Training Score-Based Generative Models.
 
-[Song et al. 2020](https://arxiv.org/abs/2006.09011)
+[6] Huang, C., Lim, J. H., & Courville, A. (2021). A Variational Perspective on Diffusion-Based Generative Models and Score Matching.
 
-[Huang et al. 2021](https://arxiv.org/abs/2106.02808)
+[7] Weiss, E. A., Maheswaranathan, N., & Ganguli, S. (2015). Deep Unsupervised Learning using Nonequilibrium Thermodynamics.
 
-[this blog post by The AI Summer](https://theaisummer.com/diffusion-models/)
+[8] Nichol, A., & Dhariwal, P. (2021). Improved Denoising Diffusion Probabilistic Models.
 
-[Diffusion probabilistic models (DPMs)](https://arxiv.org/abs/1503.03585)
+[9] Chen, T. (2023). On the Importance of Noise Scheduling for Diffusion Models.
 
-[Ho et al. 2020](https://arxiv.org/abs/2006.11239)
+[10] Kingma, D. P., Salimans, T., Poole, B., & Ho, J. (2021). Variational Diffusion Models.
 
-[Nichol and Dhariwal 2021](https://arxiv.org/abs/2102.09672)
+[11] Sønderby, C. K., Raiko, T., Maaløe, L., Sønderby, S. K., & Winther, O. (2016). Ladder Variational Autoencoders.
 
-[Sohl et al. 2015](https://arxiv.org/abs/1503.03585)
+[12] Song, Y., & Ermon, S. (2019). Generative Modeling by Estimating Gradients of the Data Distribution.
 
-[Chen 2023](https://arxiv.org/abs/2301.10972)
+[13] Hyvarinen, A. (2005). Estimation of Non-Normalized Statistical Models by Score Matching. Journal of Machine Learning Research.
 
-[DDPMs](https://arxiv.org/abs/2006.11239)
+[14] Abstreiter, K., Mittal, S., Bauer, S., Schölkopf, B., & Mehrjou, A. (2021). Diffusion-Based Representation Learning.
 
-[Nichol et al. (2021)](https://arxiv.org/abs/2102.09672)
+[15] Ronneberger, O., Fischer, P., & Brox, T. (2015). U-Net: Convolutional Networks for Biomedical Image Segmentation.
 
-[Variational Diffusion Models (VDMs)](https://arxiv.org/abs/2107.00630)
+[16] Chen, X., Kingma, D. P., Salimans, T., Duan, Y., Dhariwal, P., Schulman, J., Sutskever, I., & Abbeel, P. (2016). Variational Lossy Autoencoder.
 
-[hierarchical VAEs](https://arxiv.org/abs/1602.02282)
+[17] Zhao, S., Song, J., & Ermon, S. (2017). Towards Deeper Understanding of Variational Autoencoding Models.
 
-[Score-based models](https://arxiv.org/abs/1907.05600)
-
-[Song and Ermon 2020](https://arxiv.org/abs/2006.09011)
-
-[Song et al.](https://arxiv.org/abs/2006.09011)
-
-[Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others)
-
-[Explicit Score Matching (ESM)](https://www.jmlr.org/papers/volume6/hyvarinen05a/hyvarinen05a.pdf)
-
-[this blog post by Yang Song](https://yang-song.net/blog/2021/score/#connection-to-diffusion-models-and-others)
-
-[Abstreiter et al. (2022)](https://arxiv.org/abs/2105.14257)
-
-[Ronneberger et al.](https://arxiv.org/abs/1505.04597)
-
-[Chen et al. 2016](https://arxiv.org/abs/1611.02731)
-
-[Zhao et al. 2017](https://arxiv.org/abs/1702.08658)
-
-[VDM paper](https://arxiv.org/abs/2107.00630)
-
-[diffusers library](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/vae.py)
-
-[Wang et al. 2021](https://openreview.net/pdf?id=ejAu7ugNj_M)
-
-[*posterior collapse*](https://arxiv.org/abs/2301.00537)
-
-[T-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding)
+[18] Wang, Y., Blei, D., & Cunningham, P. (2021). Posterior Collapse and Latent Variable Non-identifiability.
