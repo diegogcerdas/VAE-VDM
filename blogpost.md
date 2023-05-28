@@ -290,7 +290,7 @@ The following plots show the BPD and FID obtained from different combinations of
 
 As our approximated posterior collapses to the fixed prior distribution for all experiments, meaning that it fails to effectively capture the underlying structure of the data, we conclude that given our approach and architectures the encoder is not able to learn a meaningful representation of the data, neither is it useful for the diffusion-based model. A more in-depth discussion and future work directions can be found in the discussion section.
 
-## Sampling Results
+### Sampling Results
 
 For qualitative evaluation of the encoders and diffusion models, we chose to sample using the largest and smallest diffusion models: SVDM and MVDM respectively, and with the largest encoder (OE) or with no encoder at all. This way we can showcase the difference resulting from the size of the diffusion model, and from the presence of a powerful encoder.
 
