@@ -32,8 +32,16 @@ To train with default parameters and options:
 python src/train.py --results-path results/my_experiment/ --use-encoder
 ```
 
-Append `--resume` to the command above to resume training from the latest checkpoint. 
-See [`train.py`](train.py) for more training options.
+Append `--resume` to the command above to resume training from the latest checkpoint.
+
+> :bulb: Tips:
+> - You might need to reduce `batch-size` due to memory limits.
+> - You also might want to decrease `eval-every` to do evaluation every less steps and save checkpoints.
+> - Use `train-num-steps` to train for a specific number of steps.
+> 
+> See [`train.py`](src/train.py) for more training options.
+
+### Reproducing the experiments
 
 Find the scripts to reproduce the experiments in the paper in [`scripts/`](scripts/):
 

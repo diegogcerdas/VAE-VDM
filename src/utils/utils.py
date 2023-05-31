@@ -185,10 +185,14 @@ def load_config_from_yaml(cls, args):
 
 
 def check_config_matches_checkpoint(config, checkpoint_path):
+
     with open(checkpoint_path / "config.yaml", "r") as f:
         ckpt_config = yaml.safe_load(f)
     config = dataclasses.asdict(config)
-    if config != ckpt_config:
+
+    match = all(config[k] == ckpt_config[k] for k in ckpt_config)
+
+    if not match:
         config_str = "\n    ".join(f"{k}: {config[k]}" for k in sorted(config))
         ckpt_str = "\n    ".join(f"{k}: {ckpt_config[k]}" for k in sorted(ckpt_config))
         raise ValueError(
@@ -196,3 +200,12 @@ def check_config_matches_checkpoint(config, checkpoint_path):
             f"> Config:\n    {config_str}\n\n"
             f"> Checkpoint:\n    {ckpt_str}\n\n"
         )
+    
+def save_config(config, path):
+    ignored_fields = {"resume", "results_path", "seed", "device"}
+
+    tmp = dataclasses.asdict(config)
+    tmp = {k: v for k, v in tmp.items() if k not in ignored_fields}
+
+    with open(path / "config.yaml", "w") as f:
+        yaml.dump(tmp, f)

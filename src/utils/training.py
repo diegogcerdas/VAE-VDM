@@ -4,7 +4,8 @@ from utils.utils import (
     get_date_str,
     check_config_matches_checkpoint,
     sample_batched,
-    handle_results_path
+    handle_results_path,
+    save_config,
 )
 from utils.logging import log
 from utils.evaluation import evaluate_model_and_log
@@ -79,8 +80,7 @@ class Trainer:
             if len(list(self.path.glob("*.pt"))) > 0:
                 raise ValueError(f"'{self.path}' contains checkpoints but resume=False")
             if accelerator.is_main_process:
-                with open(self.path / "config.yaml", "w") as f:
-                    yaml.dump(dataclasses.asdict(config), f)
+                save_config(config, self.path)
 
     def save_checkpoint(self):
         tmp_file = self.checkpoint_file.with_suffix(f".tmp.{get_date_str()}.pt")
